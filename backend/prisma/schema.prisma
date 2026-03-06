@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  usuario
+  administrador
+  administrador_reservas
+}
+
+enum Status {
+  pendiente
+  aprobada
+  rechazada
+  cancelada
+}
+
+model User {
+  id             String               @id @default(uuid())
+  nombre         String
+  apellido       String
+  cedula         String               @unique
+  legajo         String               @unique
+  correo         String               @unique
+  telefono       String?
+  password_hash  String
+  role           Role                 @default(usuario)
+  created_at     DateTime             @default(now())
+
+  reservations   Reservation[]
+  historyChanges ReservationHistory[] @relation("ChangedBy")
+}
+
+model Location {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+
+  cabins      Cabin[]
+}
+
+model Cabin {
+  id          String   @id @default(uuid())
+  location_id String
+  identifier  String
+  capacity    Int?
+  status      String   @default("activa") // "activa", "mantenimiento"
+
+  location    Location @relation(fields: [location_id], references: [id])
+  reservations Reservation[]
+}
+
+model Reservation {
+  id          String   @id @default(uuid())
+  user_id     String
+  cabin_id    String
+  start_date  DateTime @db.Date // Lunes
+  end_date    DateTime @db.Date // Lunes siguiente
+  status      Status   @default(pendiente)
+  created_at  DateTime @default(now())
+
+  user        User     @relation(fields: [user_id], references: [id])
+  cabin       Cabin    @relation(fields: [cabin_id], references: [id])
+  history     ReservationHistory[]
+}
+
+model ReservationHistory {
+  id             String   @id @default(uuid())
+  reservation_id String
+  changed_by     String
+  old_status     String?
+  new_status     String
+  change_date    DateTime @default(now())
+  comments       String?
+
+  reservation    Reservation @relation(fields: [reservation_id], references: [id])
+  changer        User        @relation("ChangedBy", fields: [changed_by], references: [id])
+}

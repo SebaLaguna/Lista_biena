@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  --color-armada-navy: #001a3d;
+  --color-armada-gold: #d4af37;
+  --color-armada-gold-light: #f1d592;
+  --color-armada-silver: #e5e7eb;
+  --color-armada-black: #050b14;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .institutional-card {
+    @apply bg-white border-t-4 border-t-armada-gold shadow-xl rounded-b-lg;
+  }
+
+  .btn-armada {
+    @apply bg-armada-navy text-white hover:bg-slate-800 px-6 py-2 rounded font-bold transition-all border border-armada-gold/30 hover:border-armada-gold;
+  }
+
+  .btn-armada-gold {
+    @apply bg-armada-gold text-armada-navy hover:bg-armada-gold-light px-6 py-2 rounded font-bold transition-all border border-armada-navy/10;
+  }
+}
