@@ -102,7 +102,7 @@ export default function MyReservations() {
                                         <div className="mt-6 flex items-center gap-3 bg-white p-3 rounded border border-armada-gold/20 shadow-sm">
                                             <ShieldCheck size={16} className="text-armada-gold shrink-0" />
                                             <p className="text-[8px] md:text-[9px] font-bold text-armada-navy uppercase leading-tight italic">
-                                                Esta solicitud se encuentra bajo revisión del Estado Mayor.
+                                                Esta solicitud se encuentra bajo revisión de BIENA.
                                             </p>
                                         </div>
                                     )}

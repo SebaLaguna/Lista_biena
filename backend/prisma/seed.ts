@@ -13,8 +13,8 @@ async function main() {
     const laPaloma = await prisma.location.create({
         data: { name: 'La Paloma', description: 'Cabañas en La Paloma' }
     });
-    const baena = await prisma.location.create({
-        data: { name: 'Baena', description: 'Cabañas en Baena' }
+    const baen = await prisma.location.create({
+        data: { name: 'Baen', description: 'Cabañas en Baen' }
     });
 
     // Create Cabins
@@ -30,10 +30,10 @@ async function main() {
             data: { location_id: laPaloma.id, identifier: `La Paloma ${i}`, capacity: 4 }
         });
     }
-    // Baena: 5
+    // Baen: 5
     for (let i = 1; i <= 5; i++) {
         await prisma.cabin.create({
-            data: { location_id: baena.id, identifier: `Baena ${i}`, capacity: 4 }
+            data: { location_id: baen.id, identifier: `Baen ${i}`, capacity: 4 }
         });
     }
 
@@ -51,6 +51,40 @@ async function main() {
             telefono: '099000000',
             password_hash: adminPassword,
             role: 'administrador'
+        }
+    });
+
+    // Create test user (role: usuario)
+    const usuarioPassword = await bcrypt.hash('usuario123', 10);
+    await prisma.user.upsert({
+        where: { correo: 'usuario@armada.mil.uy' },
+        update: {},
+        create: {
+            nombre: 'Usuario',
+            apellido: 'Prueba',
+            cedula: '11111111',
+            legajo: 'USR001',
+            correo: 'usuario@armada.mil.uy',
+            telefono: '099111111',
+            password_hash: usuarioPassword,
+            role: 'usuario'
+        }
+    });
+
+    // Create test user (role: administrador_reservas)
+    const admReservasPassword = await bcrypt.hash('reservas123', 10);
+    await prisma.user.upsert({
+        where: { correo: 'reservas@armada.mil.uy' },
+        update: {},
+        create: {
+            nombre: 'Admin',
+            apellido: 'Reservas',
+            cedula: '22222222',
+            legajo: 'RSV001',
+            correo: 'reservas@armada.mil.uy',
+            telefono: '099222222',
+            password_hash: admReservasPassword,
+            role: 'administrador_reservas'
         }
     });
 

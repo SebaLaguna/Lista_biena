@@ -96,7 +96,7 @@ export default function Reserve() {
                 start_date: start.toISOString(),
                 end_date: end.toISOString()
             });
-            setSuccess('Solicitud de reserva enviada al Estado Mayor exitosamente.');
+            setSuccess('Solicitud de reserva enviada a BIENA exitosamente.');
             setTimeout(() => {
                 navigate('/my-reservations');
             }, 3000);
@@ -257,7 +257,7 @@ export default function Reserve() {
                             className="btn-armada flex items-center gap-4 py-4 md:py-5 px-8 md:px-12 group shadow-[0_10px_40px_rgba(0,26,61,0.2)] disabled:opacity-50 w-full sm:w-auto justify-center"
                         >
                             <span className="text-sm md:text-lg font-black italic tracking-widest underline underline-offset-8 decoration-armada-gold/50 group-hover:decoration-armada-gold leading-none">
-                                {loading ? 'PROCESANDO...' : 'REMITIR SOLICITUD AL ESTADO MAYOR'}
+                                {loading ? 'PROCESANDO...' : 'REMITIR SOLICITUD A BIENA'}
                             </span>
                             <ChevronRight className="group-hover:translate-x-2 transition-transform text-armada-gold hidden sm:block" size={24} />
                         </button>

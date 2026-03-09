@@ -22,7 +22,9 @@ export default function AdminPanel() {
     }, []);
 
     const handleStatusUpdate = async (id: string, newStatus: string) => {
-        if (!window.confirm(`¿PROCEDER CON LA ${newStatus.toUpperCase()} DE ESTA SOLICITUD?`)) return;
+        const labels: Record<string, string> = { aprobada: 'APROBACIÓN', rechazada: 'RECHAZO' };
+        const label = labels[newStatus] ?? newStatus.toUpperCase();
+        if (!window.confirm(`¿PROCEDER CON LA ${label} DE ESTA SOLICITUD?`)) return;
 
         setActionLoading(id);
         try {
