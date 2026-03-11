@@ -2,11 +2,17 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, MapPin, Clock, Anchor, Ship, ShieldCheck } from 'lucide-react';
+import { Calendar, MapPin, Clock, Anchor, Ship, ShieldCheck, Search } from 'lucide-react';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import CompassLogo from '../components/CompassLogo';
 
 export default function MyReservations() {
     const [reservations, setReservations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterDateRange, setFilterDateRange] = useState<[Date | null, Date | null]>([null, null]);
+    const [filterStart, filterEnd] = filterDateRange;
 
     useEffect(() => {
         api.get('/reservations/me')
@@ -26,27 +32,99 @@ export default function MyReservations() {
 
     if (loading) return <div className="p-12 text-center text-armada-navy font-bold animate-pulse">Cargando legajo de reservas...</div>;
 
+    const sortedReservations = [...reservations].sort((a, b) => {
+        if (a.status === 'pendiente' && b.status !== 'pendiente') return -1;
+        if (a.status !== 'pendiente' && b.status === 'pendiente') return 1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+
+    const filteredReservations = sortedReservations.filter(res => {
+        // Text Filter
+        const term = searchTerm.toLowerCase();
+        let matchesText = true;
+        if (term) {
+            const locStr = `${res.cabin.location.name} ${res.cabin.identifier}`.toLowerCase();
+            matchesText = locStr.includes(term);
+        }
+
+        // Date Filter
+        let matchesDate = true;
+        if (filterStart || filterEnd) {
+            const resStart = new Date(res.start_date);
+            const resEnd = new Date(res.end_date);
+
+            if (filterStart && filterEnd) {
+                // Check if reservation overlaps with selected range
+                matchesDate = resStart <= filterEnd && resEnd >= filterStart;
+            } else if (filterStart) {
+                // If only start date is selected, check if reservation ends after or on the start date
+                matchesDate = resEnd >= filterStart;
+            } else if (filterEnd) {
+                matchesDate = resStart <= filterEnd;
+            }
+        }
+
+        return matchesText && matchesDate;
+    });
+
     return (
         <div className="w-full space-y-8 md:space-y-10 py-4 md:py-8 px-4 sm:px-6 lg:px-10">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 border-b-4 border-armada-gold pb-6 text-center sm:text-left animate-fade-in-up">
-                <div className="bg-armada-navy p-3 rounded shadow-lg shrink-0">
-                    <Ship className="text-white" size={28} />
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b-4 border-armada-gold pb-6 text-center sm:text-left animate-fade-in-up">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                    <div className="bg-armada-navy p-3 rounded shadow-lg shrink-0">
+                        <Ship className="text-white" size={28} />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl md:text-3xl font-black text-armada-navy uppercase tracking-tighter">Historial de Reservas</h2>
+                        <p className="text-slate-500 font-medium text-[10px] md:text-sm uppercase tracking-widest mt-1">Registro oficial de solicitudes y estancias vacacionales</p>
+                    </div>
                 </div>
-                <div>
-                    <h2 className="text-2xl md:text-3xl font-black text-armada-navy uppercase tracking-tighter">Historial de Reservas</h2>
-                    <p className="text-slate-500 font-medium text-[10px] md:text-sm uppercase tracking-widest mt-1">Registro oficial de solicitudes y estancias vacacionales</p>
+
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mt-2 sm:mt-0">
+                    <div className="relative w-full sm:w-56">
+                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <DatePicker
+                            selectsRange={true}
+                            startDate={filterStart}
+                            endDate={filterEnd}
+                            onChange={(update: [Date | null, Date | null]) => {
+                                setFilterDateRange(update);
+                            }}
+                            isClearable={true}
+                            placeholderText="FILTRAR RANGO..."
+                            locale={es}
+                            className="w-full pl-10 pr-8 py-3 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-[10px] uppercase tracking-widest bg-white shadow-sm"
+                            dateFormat="dd/MM/yy"
+                        />
+                    </div>
+                    <div className="relative w-full sm:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <input
+                            type="text"
+                            placeholder="BUSCAR DESTINO..."
+                            className="w-full pl-10 pr-4 py-3 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-[10px] uppercase tracking-widest bg-white shadow-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </div>
             </div>
 
-            {reservations.length === 0 ? (
+            {filteredReservations.length === 0 ? (
                 <div className="institutional-card p-12 md:p-16 text-center bg-slate-50/50 border-dashed border-2 border-slate-200 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-                    <Compass className="mx-auto h-12 w-12 md:h-16 md:w-16 text-slate-300 mb-4" />
-                    <h3 className="text-lg md:text-xl font-bold text-slate-400 uppercase tracking-widest">Sin registros activos</h3>
-                    <p className="mt-2 text-slate-400 text-xs md:text-sm">No se han encontrado solicitudes vinculadas a su legajo militar.</p>
+                    <CompassLogo className="mx-auto text-slate-300 mb-4" size={64} bgColor="transparent" />
+                    <h3 className="text-lg md:text-xl font-bold text-slate-400 uppercase tracking-widest">
+                        {reservations.length === 0 ? "Sin registros activos" : "No hay coincidencias"}
+                    </h3>
+                    <p className="mt-2 text-slate-400 text-xs md:text-sm">
+                        {reservations.length === 0
+                            ? "No se han encontrado solicitudes vinculadas a su legajo militar."
+                            : "No se encontraron reservas que coincidan con su búsqueda."}
+                    </p>
                 </div>
             ) : (
                 <div className="grid gap-6 md:gap-8 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-                    {reservations.map((reservation, idx) => (
+                    {filteredReservations.map((reservation, idx) => (
                         <div key={reservation.id} className="institutional-card group hover:border-armada-gold transition-all overflow-hidden" style={{ animationDelay: `${idx * 50}ms` }}>
                             <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-100">
                                 <div className="p-5 md:p-8 md:w-2/3 space-y-6">
@@ -116,7 +194,3 @@ export default function MyReservations() {
     );
 }
 
-// Helper icons specifically for this view
-const Compass = ({ className, size }: { className?: string, size?: number }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size || 24} height={size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
-);

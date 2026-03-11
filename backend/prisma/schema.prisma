@@ -30,15 +30,17 @@ model User {
   telefono       String?
   password_hash  String
   role           Role                 @default(usuario)
+  status         String               @default("pendiente") // "pendiente", "aprobado", "inactivo"
   created_at     DateTime             @default(now())
 
   reservations   Reservation[]
   historyChanges ReservationHistory[] @relation("ChangedBy")
+  logs           SystemLog[]
 }
 
 model Location {
   id          String   @id @default(uuid())
-  name        String
+  name        String   @unique
   description String?
 
   cabins      Cabin[]
@@ -47,20 +49,22 @@ model Location {
 model Cabin {
   id          String   @id @default(uuid())
   location_id String
-  identifier  String
+  identifier  String   @unique
   capacity    Int?
-  status      String   @default("activa") // "activa", "mantenimiento"
+  status      String   @default("disponible") // "disponible", "mantenimiento", "fuera_de_servicio"
 
   location    Location @relation(fields: [location_id], references: [id])
   reservations Reservation[]
+  blocked_dates BlockedDate[]
 }
 
 model Reservation {
   id          String   @id @default(uuid())
   user_id     String
   cabin_id    String
-  start_date  DateTime @db.Date // Lunes
-  end_date    DateTime @db.Date // Lunes siguiente
+  start_date  DateTime @db.Date 
+  end_date    DateTime @db.Date 
+  occupants   Int      @default(1)
   status      Status   @default(pendiente)
   created_at  DateTime @default(now())
 
@@ -80,4 +84,27 @@ model ReservationHistory {
 
   reservation    Reservation @relation(fields: [reservation_id], references: [id])
   changer        User        @relation("ChangedBy", fields: [changed_by], references: [id])
+}
+
+model SystemLog {
+  id          String   @id @default(uuid())
+  user_id     String?
+  action      String
+  entity_type String
+  entity_id   String?
+  details     String?
+  created_at  DateTime @default(now())
+
+  user        User?    @relation(fields: [user_id], references: [id])
+}
+
+model BlockedDate {
+  id          String   @id @default(uuid())
+  cabin_id    String?  // Si es null, bloquea todas las cabañas
+  start_date  DateTime @db.Date
+  end_date    DateTime @db.Date
+  reason      String?
+  created_at  DateTime @default(now())
+
+  cabin       Cabin?   @relation(fields: [cabin_id], references: [id])
 }

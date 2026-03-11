@@ -4,44 +4,67 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('Seeding database...');
+    console.log('Seeding database with institutional data...');
 
-    // Create Locations
-    const santaTeresa = await prisma.location.create({
-        data: { name: 'Santa Teresa', description: 'Cabañas en Santa Teresa' }
-    });
-    const laPaloma = await prisma.location.create({
-        data: { name: 'La Paloma', description: 'Cabañas en La Paloma' }
-    });
-    const baen = await prisma.location.create({
-        data: { name: 'Baen', description: 'Cabañas en Baen' }
-    });
+    // 1. Locations (using name as unique key for upsert)
+    const locationsData = [
+        { name: 'Santa Teresa', description: 'Cabañas en el Parque Nacional Santa Teresa' },
+        { name: 'La Paloma', description: 'Cabañas en el balneario La Paloma' },
+        { name: 'BAEN', description: 'Base Aeronaval' }
+    ];
 
-    // Create Cabins
-    // Santa Teresa: 3
-    for (let i = 1; i <= 3; i++) {
-        await prisma.cabin.create({
-            data: { location_id: santaTeresa.id, identifier: `Santa Teresa ${i}`, capacity: 4 }
+    const locations: { [key: string]: any } = {};
+
+    for (const loc of locationsData) {
+        const createdLoc = await prisma.location.upsert({
+            where: { name: loc.name } as any,
+            update: { description: loc.description },
+            create: { name: loc.name, description: loc.description }
         });
-    }
-    // La Paloma: 10
-    for (let i = 1; i <= 10; i++) {
-        await prisma.cabin.create({
-            data: { location_id: laPaloma.id, identifier: `La Paloma ${i}`, capacity: 4 }
-        });
-    }
-    // Baen: 5
-    for (let i = 1; i <= 5; i++) {
-        await prisma.cabin.create({
-            data: { location_id: baen.id, identifier: `Baen ${i}`, capacity: 4 }
-        });
+        locations[loc.name] = createdLoc;
+        console.log(`Location verified: ${loc.name}`);
     }
 
-    // Create Admin User
+    // 2. Cabins
+    const cabinCounts = [
+        { locName: 'Santa Teresa', count: 3, capacity: 4 },
+        { locName: 'La Paloma', count: 10, capacity: 4 },
+        { locName: 'BAEN', count: 5, capacity: 4 }
+    ];
+
+    for (const item of cabinCounts) {
+        const locId = locations[item.locName].id;
+        for (let i = 1; i <= item.count; i++) {
+            const identifier = `${item.locName} ${i}`;
+            await prisma.cabin.upsert({
+                where: { id: `fixed-cabin-${item.locName.toLowerCase().replace(' ', '-')}-${i}` }, // Fixed ID to prevent duplicates if name changes
+                update: {
+                    identifier,
+                    capacity: item.capacity,
+                    location_id: locId
+                },
+                create: {
+                    id: `fixed-cabin-${item.locName.toLowerCase().replace(' ', '-')}-${i}`,
+                    identifier,
+                    capacity: item.capacity,
+                    location_id: locId,
+                    status: 'disponible'
+                }
+            });
+        }
+        console.log(`Verified ${item.count} cabins for ${item.locName}`);
+    }
+
+    // 3. Default Users
+    // Create/Update Admin User
     const adminPassword = await bcrypt.hash('admin123', 10);
     await prisma.user.upsert({
         where: { correo: 'admin@armada.mil.uy' },
-        update: {},
+        update: {
+            status: 'aprobado',
+            password_hash: adminPassword,
+            role: 'administrador'
+        },
         create: {
             nombre: 'Admin',
             apellido: 'Armada',
@@ -50,15 +73,19 @@ async function main() {
             correo: 'admin@armada.mil.uy',
             telefono: '099000000',
             password_hash: adminPassword,
-            role: 'administrador'
+            role: 'administrador',
+            status: 'aprobado'
         }
     });
 
-    // Create test user (role: usuario)
     const usuarioPassword = await bcrypt.hash('usuario123', 10);
     await prisma.user.upsert({
         where: { correo: 'usuario@armada.mil.uy' },
-        update: {},
+        update: {
+            status: 'aprobado',
+            password_hash: usuarioPassword,
+            role: 'usuario'
+        },
         create: {
             nombre: 'Usuario',
             apellido: 'Prueba',
@@ -67,15 +94,19 @@ async function main() {
             correo: 'usuario@armada.mil.uy',
             telefono: '099111111',
             password_hash: usuarioPassword,
-            role: 'usuario'
+            role: 'usuario',
+            status: 'aprobado'
         }
     });
 
-    // Create test user (role: administrador_reservas)
     const admReservasPassword = await bcrypt.hash('reservas123', 10);
     await prisma.user.upsert({
         where: { correo: 'reservas@armada.mil.uy' },
-        update: {},
+        update: {
+            status: 'aprobado',
+            password_hash: admReservasPassword,
+            role: 'administrador_reservas'
+        },
         create: {
             nombre: 'Admin',
             apellido: 'Reservas',
@@ -84,7 +115,8 @@ async function main() {
             correo: 'reservas@armada.mil.uy',
             telefono: '099222222',
             password_hash: admReservasPassword,
-            role: 'administrador_reservas'
+            role: 'administrador_reservas',
+            status: 'aprobado'
         }
     });
 

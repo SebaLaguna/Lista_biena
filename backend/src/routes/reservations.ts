@@ -5,9 +5,10 @@ import {
     getMyReservations,
     getAdminReservations,
     updateReservationStatus,
-    getUserHistory
+    getUserHistory,
+    deleteReservation
 } from '../controllers/reservationController';
-import { authenticate, requireAdmin } from '../middlewares/authMiddleware';
+import { authenticate, requireAdmin, requireSuperAdmin } from '../middlewares/authMiddleware';
 
 const router = Router();
 
@@ -20,5 +21,8 @@ router.get('/me', authenticate, getMyReservations);
 router.get('/admin', authenticate, requireAdmin, getAdminReservations);
 router.put('/admin/:id/status', authenticate, requireAdmin, updateReservationStatus);
 router.get('/admin/user/:userId/history', authenticate, requireAdmin, getUserHistory);
+
+// Rutas exclusivas de SuperAdmin
+router.delete('/admin/:id', authenticate, requireSuperAdmin, deleteReservation);
 
 export default router;

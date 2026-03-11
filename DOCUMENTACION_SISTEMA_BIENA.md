@@ -4,7 +4,7 @@
 
 ---
 
-**Versión:** 1.0  
+**Versión:** 2.0  
 **Fecha:** Marzo 2026  
 **Clasificación:** Uso Interno
 
@@ -12,220 +12,88 @@
 
 ## 1. Introducción
 
-El Sistema BIENA es una plataforma web desarrollada para la Armada Nacional de Uruguay, destinada a gestionar de manera digital y ordenada las solicitudes de reserva de viviendas vacacionales disponibles para el personal de la institución.
-
-A través de este sistema, el personal puede consultar la disponibilidad de cabañas en distintas ubicaciones, realizar solicitudes de reserva y hacer seguimiento del estado de las mismas, todo desde un entorno seguro y accesible.
+El Sistema BIENA es una plataforma web desarrollada para la Armada Nacional de Uruguay, destinada a gestionar de manera digital y ordenada las solicitudes de reserva de viviendas vacacionales disponibles para el personal de la institución. En su versión 2.0, el sistema incorpora roles avanzados, auditoría completa, gestión de disponibilidad dinámica y validación estricta de condiciones de uso.
 
 ---
 
 ## 2. Objetivo del Sistema
 
-El Sistema BIENA tiene como objetivo principal reemplazar los procesos manuales o informales de reserva de viviendas vacacionales, centralizando toda la gestión en una plataforma digital institucional.
+El Sistema BIENA tiene como objetivo principal digitalizar y auditar integralmente la gestión de reservas de viviendas vacacionales.
 
 El sistema permite:
-
-- Que el personal solicite reservas de cabañas de forma rápida y ordenada.
-- Que los administradores revisen, aprueben o rechacen las solicitudes.
-- Que todos los movimientos queden registrados con trazabilidad completa.
-- Reducir errores, superposiciones de reservas y comunicaciones informales.
-
----
-
-## 3. Tipos de Usuarios
-
-El sistema contempla tres tipos de usuarios, cada uno con distintos niveles de acceso y responsabilidades.
-
-### 3.1 Usuario
-
-Es el personal de la Armada que utiliza el sistema para solicitar reservas de viviendas vacacionales.
-
-**Puede:**
-- Registrarse e iniciar sesión en el sistema.
-- Consultar las ubicaciones y cabañas disponibles.
-- Realizar solicitudes de reserva.
-- Ver el estado de sus propias reservas (pendiente, aprobada, rechazada, cancelada).
-
-**No puede:**
-- Ver las reservas de otros usuarios.
-- Aprobar ni rechazar solicitudes.
-- Acceder al panel de administración.
+- Solicitar reservas de cabañas de forma rápida y controlada (de 1 a 7 días).
+- Especificar la cantidad de ocupantes respetando aforos definidos.
+- Gestionar aprobaciones, roles y unidades (cabañas) mediante administradores.
+- Auditar todas las operaciones de los usuarios en tiempo real.
+- Notificar por correo electrónico los cambios de estado al personal.
 
 ---
 
-### 3.2 Administrador de Reservas
+## 3. Tipos de Usuarios y Roles
 
-Es el responsable operativo de gestionar las solicitudes de reserva dentro del sistema.
+### 3.1 Usuario Base
+Personal de la Armada que solicita reservas. Nuevos registros ingresan en estado "Pendiente". Sus capacidades son:
+- Consultar disponibilidad de cabañas.
+- Solicitar reservas (sujeto a la aceptación de las Condiciones de Uso).
+- Consultar el historial y estado de sus reservas.
+- Recibir correos electrónicos con comprobantes y actualizaciones de estado.
 
-**Puede:**
-- Hacer todo lo que puede hacer un Usuario.
-- Acceder al panel de administración de reservas.
-- Revisar todas las solicitudes pendientes.
-- Aprobar o rechazar solicitudes de reserva.
-- Consultar el historial de reservas de cualquier usuario.
+### 3.2 Administrador de Reservas (Admin BIENA)
+Responsable operativo de la gestión de viviendas. Puede:
+- Aprobar altas de nuevos usuarios al sistema.
+- Aprobar o rechazar solicitudes de reserva (exigiendo un motivo en caso de rechazo).
+- Gestionar unidades habitacionales (modificar capacidad, identificador o marcar "En mantenimiento" / "Fuera de servicio").
+- Registrar bloqueos de fechas (globales o por cabaña).
+- Todas las funciones del Usuario Base.
 
----
-
-### 3.3 Administrador
-
-Es el usuario con el nivel más alto de acceso al sistema. Tiene control total sobre la plataforma.
-
-**Puede:**
-- Hacer todo lo que puede hacer un Administrador de Reservas.
-- Gestionar usuarios del sistema (altas, bajas, modificaciones).
-- Configurar parámetros del sistema.
-- Acceder a todos los registros y reportes disponibles.
-
----
-
-## 4. Proceso General del Sistema
-
-El flujo general del sistema sigue los siguientes pasos:
-
-1. **El usuario se registra** en el sistema con sus datos personales e institucionales.
-2. **Inicia sesión** con su correo institucional y contraseña.
-3. **Accede al panel principal** donde puede ver las opciones disponibles.
-4. **Realiza una solicitud de reserva**, seleccionando la ubicación, la cabaña y la semana deseada.
-5. **La solicitud queda en estado "Pendiente"** hasta que un administrador la revise.
-6. **El administrador aprueba o rechaza** la solicitud desde el panel de administración.
-7. **El usuario puede consultar el estado** de su solicitud en cualquier momento desde su perfil.
+### 3.3 Super Administrador
+Usuario con acceso total y capacidades técnicas de auditoría. Puede:
+- Consultar el Historial de Auditoría Global (Sistema de Logs).
+- Eliminar usuarios definitivamente del padrón.
+- Otorgar y revocar privilegios y roles (ascender usuarios a Administradores).
+- Todas las funciones del Administrador BIENA.
 
 ---
 
-## 5. Registro de Usuarios
+## 4. Proceso de Reservas Inteligente
 
-Para acceder al sistema, el personal debe registrarse completando un formulario con los siguientes datos:
+### 4.1 Selección y Filtros
+El sistema presenta un catálogo de Destinos Navales y Unidades Habitacionales. La disponibilidad cuenta con validaciones estrictas:
+- **Fechas Habilitadas:** El calendario desactiva automáticamente las fechas que ya están ocupadas o bloqueadas operativamente por BIENA.
+- **Rango Flexible:** Las reservas se realizan seleccionando desde 1 hasta un máximo de 7 días consecutivos.
+- **Aforo:** El usuario debe declarar la cantidad de ocupantes. El sistema restringe el ingreso si supera la capacidad de la unidad solicitada.
 
-| Campo | Descripción |
-|-------|-------------|
-| **Nombre** | Nombre del funcionario |
-| **Apellido** | Apellido del funcionario |
-| **Cédula de Identidad** | Número de cédula uruguaya |
-| **Legajo** | Número de legajo institucional |
-| **Correo institucional** | Dirección de correo electrónico de la Armada |
-| **Teléfono** | Número de teléfono de contacto (opcional) |
-
-> **Importante:** La cédula de identidad y el número de legajo son únicos en el sistema. No puede haber dos usuarios registrados con el mismo número de cédula ni con el mismo legajo.
-
-Una vez registrado, el usuario puede iniciar sesión de inmediato.
+### 4.2 Autorización y Rechazo
+- Una reserva ingresada queda en estado **Pendiente**.
+- El Mando Administrativo aprueba o rechaza la orden.
+- Si se **rechaza**, el sistema exige ingresar un comentario oficial fundamentando la decisión.
+- El solicitante recibe un correo electrónico automatizado con la resolución (aprobación o rechazo con su respectivo motivo).
 
 ---
 
-## 6. Inicio de Sesión
+## 5. Panel de Administración y Control
 
-Para acceder al sistema, el usuario debe:
+La interfaz "Estado Mayor de Reservas" ha sido reformulada para incluir múltiples módulos (Tabs) con filtros de búsqueda avanzada:
 
-1. Ingresar a la dirección web del sistema.
-2. Completar su **correo institucional** y su **contraseña**.
-3. Presionar el botón de inicio de sesión.
-
-Si los datos son correctos, el sistema redirige al usuario a la página principal. En caso de error, se mostrará un mensaje indicando que las credenciales son incorrectas.
-
----
-
-## 7. Panel Principal
-
-Luego de iniciar sesión, el usuario accede a la **página principal del sistema**, desde donde puede:
-
-- Iniciar una nueva solicitud de reserva.
-- Consultar sus reservas activas y su historial.
-- Cerrar sesión de forma segura.
-
-Los usuarios con roles de administrador también verán accesos directos al **panel de gestión de reservas**.
+1. **Solicitudes:** Control de los estados de reserva.
+2. **Usuarios:** Aprobación de altas, control de estados (Aprobado/Inactivo) y designación de roles (acceso VIP).
+3. **Unidades (Cabañas):** Edición directa de información y condición operativa.
+4. **Bloqueos:** Registro de indisponibilidad temporal para unidades individuales o para toda la red de viviendas por factores de servicio.
+5. **Auditoría (Logs):** Exclusivo para Super Admins, enlista todas las acciones relevantes ejecutadas en el sistema (identificación de IP, usuario, operación y marca temporal).
 
 ---
 
-## 8. Sistema de Reservas
+## 6. Seguridad y Envío de Correos Institucionales
 
-El proceso para realizar una solicitud de reserva es el siguiente:
-
-### Paso 1 — Seleccionar ubicación
-El usuario elige entre las ubicaciones disponibles: Santa Teresa, La Paloma o Baen.
-
-### Paso 2 — Seleccionar semana
-El sistema muestra un calendario con las semanas disponibles. El usuario elige la semana en la que desea reservar.
-
-> **Nota:** Las reservas siempre corresponden a una **semana completa**, de **lunes a lunes**. No es posible reservar períodos parciales o fechas sueltas.
-
-### Paso 3 — Confirmar solicitud
-El usuario revisa los datos de la reserva y presiona el botón **"REMITIR SOLICITUD A BIENA"** para enviar la solicitud.
-
-### Paso 4 — Confirmación
-El sistema confirma que la solicitud fue enviada y el usuario puede verla en su historial con estado **"Pendiente"**.
+- **Trazabilidad:** Cada cambio de estado de usuario, reserva o infraestructura habitacional es inyectado de forma inmutable a la base de registros.
+- **Estado Inicial:** Un funcionario recién matriculado no puede usar el sistema hasta que el Mando Administrativo corrobore sus datos (Legajo / Matrícula) y autorice su alta.
+- **NodeMailer:** Integración activa para enviar al usuario confirmaciones de registro, y las resoluciones vinculadas a su solicitud habitacional de manera inmediata y automatizada.
 
 ---
 
-## 9. Ubicaciones Disponibles
-
-El sistema gestiona reservas en las siguientes ubicaciones:
-
-| Ubicación | Cantidad de Cabañas | Capacidad por Cabaña |
-|-----------|---------------------|----------------------|
-| Santa Teresa | 3 cabañas | 4 personas |
-| La Paloma | 10 cabañas | 4 personas |
-| Baen | 5 cabañas | 4 personas |
-
-Cada cabaña tiene un identificador único dentro del sistema (por ejemplo: *La Paloma 3*, *Santa Teresa 1*, etc.).
+## 7. Términos y Condiciones
+Todo usuario está supeditado a la "Ordenanza de Reservas". Para procesar una solicitud, es mandatorio marcar la aceptación de las Condiciones de Uso vigentes, mitigando reclamos legales sobre reglamentaciones internas.
 
 ---
-
-## 10. Proceso de Aprobación
-
-Una vez que el usuario envía una solicitud, entra en el proceso de revisión administrativa.
-
-### Estados posibles de una reserva
-
-| Estado | Descripción |
-|--------|-------------|
-| **Pendiente** | La solicitud fue enviada y está esperando revisión. |
-| **Aprobada** | La solicitud fue revisada y autorizada por un administrador. |
-| **Rechazada** | La solicitud fue denegada. El usuario puede volver a intentarlo. |
-| **Cancelada** | La reserva fue anulada administrativamente. |
-
-### Cómo aprueba el administrador
-
-1. El administrador accede al **panel de administración**.
-2. Visualiza todas las solicitudes en estado "Pendiente".
-3. Revisa los datos del solicitante, la ubicación y las fechas.
-4. Presiona el botón de **aprobación** (✓) o **rechazo** (✗).
-5. El sistema solicita confirmación antes de aplicar el cambio.
-6. La reserva cambia de estado y el registro queda guardado en el historial.
-
----
-
-## 11. Historial de Reservas
-
-Cada usuario puede consultar el historial completo de sus propias reservas desde el panel principal, donde se muestra:
-
-- La ubicación y cabaña reservada.
-- Las fechas de la reserva.
-- El estado actual de la solicitud.
-- La fecha en que fue creada.
-
-Los **administradores** tienen acceso al historial de reservas de todos los usuarios del sistema, lo que permite auditar y controlar el uso de las viviendas vacacionales.
-
----
-
-## 12. Seguridad y Control
-
-El sistema incorpora los siguientes mecanismos de seguridad y control:
-
-- **Autenticación segura:** Cada usuario accede con correo y contraseña. Las contraseñas se almacenan de forma encriptada.
-- **Control de acceso por roles:** Cada tipo de usuario solo puede acceder a las funciones que le corresponden. Un usuario común no puede acceder al panel de administración.
-- **Datos únicos:** El sistema impide el registro de dos personas con la misma cédula o legajo.
-- **Trazabilidad:** Cada cambio de estado en una reserva queda registrado con fecha, hora y responsable.
-- **Prevención de superposición:** El sistema controla que no se generen dos reservas para la misma cabaña en las mismas fechas.
-
----
-
-## 13. Futuras Ampliaciones
-
-Esta sección está reservada para documentar las funcionalidades que se incorporarán al sistema en futuras versiones.
-
-| Funcionalidad | Estado |
-|---------------|--------|
-| *(Pendiente de definición)* | Planificado |
-
----
-
-*Documento generado para uso interno de la Armada Nacional de Uruguay.*  
-*Sistema BIENA — Bienestar del Personal*
+*Documento autogenerado para uso de la Armada Nacional de Uruguay.*  
+*Sistema BIENA — Bienestar del Personal v2.0*

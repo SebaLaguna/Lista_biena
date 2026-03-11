@@ -13,6 +13,8 @@ import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import cabinRoutes from './routes/cabins';
 import reservationRoutes from './routes/reservations';
+import adminRoutes from './routes/admin';
+import logRoutes from './routes/logs';
 
 app.use(cors());
 app.use(express.json());
@@ -21,6 +23,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/cabins', cabinRoutes);
 app.use('/api/reservations', reservationRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/logs', logRoutes);
 
 // Routes will be mounted here
 app.get('/api/health', (req, res) => {

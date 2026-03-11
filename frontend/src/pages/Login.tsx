@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { Anchor, ShieldCheck, Mail, Lock, ChevronRight, Loader2 } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, ChevronRight, Loader2 } from 'lucide-react';
+import CompassLogo from '../components/CompassLogo';
 
 export default function Login() {
     const [correo, setCorreo] = useState('');
@@ -40,7 +41,7 @@ export default function Login() {
             <div className="w-full max-w-md z-10">
                 <div className="text-center mb-10">
                     <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-white mb-6 border-[6px] border-armada-gold shadow-[0_0_50px_rgba(212,175,55,0.3)] animate-fade-in">
-                        <Anchor size={56} className="text-armada-navy" />
+                        <CompassLogo size={84} className="text-armada-navy" bgColor="white" />
                     </div>
                     <h1 className="text-3xl font-extrabold text-white tracking-[0.2em] uppercase mb-1 drop-shadow-lg">Armada Nacional</h1>
                     <div className="h-[2px] w-[260px] bg-armada-gold mx-auto mb-3" />

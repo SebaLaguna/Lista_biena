@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, LayoutDashboard, Anchor, Compass, ShieldCheck, Menu, X, User } from 'lucide-react';
+import { LogOut, LayoutDashboard, ShieldCheck, Menu, X, User } from 'lucide-react';
+import CompassLogo from './CompassLogo';
 
 export default function Navbar() {
     const { user, logout } = useAuth();
@@ -21,7 +22,7 @@ export default function Navbar() {
     const isAdmin = user.role === 'administrador' || user.role === 'administrador_reservas';
 
     const navLinks = [
-        { to: "/reserve", icon: <Compass size={18} />, label: "NUEVA RESERVA" },
+        { to: "/reserve", icon: <CompassLogo size={18} bgColor="transparent" />, label: "NUEVA RESERVA" },
         { to: "/my-reservations", icon: <LayoutDashboard size={18} />, label: "MIS RESERVAS" },
     ];
 
@@ -36,7 +37,7 @@ export default function Navbar() {
                     <div className="flex items-center">
                         <Link to="/dashboard" className="flex items-center gap-3 group">
                             <div className="bg-white p-2 rounded-full border-2 border-armada-gold group-hover:scale-110 transition-transform">
-                                <Anchor size={22} className="text-armada-navy" />
+                                <CompassLogo size={22} className="text-armada-navy" bgColor="white" />
                             </div>
                             <div className="flex flex-col">
                                 <span className="font-black text-sm tracking-[0.2em] uppercase leading-none">Armada Nacional</span>

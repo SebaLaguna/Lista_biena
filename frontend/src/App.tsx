@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Reserve from './pages/Reserve';
 import MyReservations from './pages/MyReservations';
 import AdminPanel from './pages/AdminPanel';
+import Terms from './pages/Terms';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -30,6 +31,7 @@ function App() {
               <Route path="/reserve" element={<ProtectedRoute><Reserve /></ProtectedRoute>} />
               <Route path="/my-reservations" element={<ProtectedRoute><MyReservations /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+              <Route path="/terms" element={<Terms />} />
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </main>

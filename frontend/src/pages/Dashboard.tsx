@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, User, Compass as CompassIcon, Anchor, LayoutDashboard } from 'lucide-react';
+import { ShieldCheck, User, Anchor, LayoutDashboard } from 'lucide-react';
+import CompassLogo from '../components/CompassLogo';
 
 export default function Dashboard() {
     const { user } = useAuth();
@@ -34,7 +35,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-10">
                 <Link to="/reserve" className="group institutional-card hover:translate-y-[-4px] transition-all p-6 md:p-8 flex flex-col h-full hover:border-armada-navy animate-fade-in-up" style={{ animationDelay: '200ms' }}>
                     <div className="bg-slate-50 w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-armada-navy group-hover:bg-armada-navy group-hover:text-white transition-all mb-6 border border-slate-100 group-hover:border-armada-gold">
-                        <CompassIcon size={28} className="md:size-[32px]" />
+                        <CompassLogo size={32} bgColor="white" />
                     </div>
                     <h3 className="text-lg md:text-xl font-black text-armada-navy uppercase tracking-tight mb-2">Solicitud de Reserva</h3>
                     <p className="text-slate-500 text-xs md:text-sm leading-relaxed mb-6">Inicie una nueva solicitud para viviendas vacacionales en las sedes de la Armada Nacional.</p>

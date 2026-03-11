@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import { sendRegistrationReceivedEmail } from '../services/emailService';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecreto_armada_2026';
@@ -35,6 +36,11 @@ export const register = async (req: Request, res: Response) => {
             }
         });
 
+        // Send email asynchronously without blocking the response
+        sendRegistrationReceivedEmail(newUser.correo, newUser.nombre).catch(err => {
+            console.error('Error enviando email en el background:', err);
+        });
+
         res.status(201).json({ message: 'Usuario registrado exitosamente', userId: newUser.id });
     } catch (error) {
         console.error(error);
@@ -60,6 +66,14 @@ export const login = async (req: Request, res: Response) => {
             return res.status(401).json({ error: 'Credenciales inválidas.' });
         }
 
+        if (user.status === 'pendiente') {
+            return res.status(403).json({ error: 'Tu cuenta está pendiente de aprobación por parte de BIENA.' });
+        }
+
+        if (user.status === 'inactivo') {
+            return res.status(403).json({ error: 'Tu cuenta ha sido desactivada.' });
+        }
+
         const token = jwt.sign(
             { id: user.id, role: user.role, correo: user.correo, nombre: user.nombre, apellido: user.apellido },
             JWT_SECRET,
@@ -74,7 +88,8 @@ export const login = async (req: Request, res: Response) => {
                 nombre: user.nombre,
                 apellido: user.apellido,
                 correo: user.correo,
-                role: user.role
+                role: user.role,
+                status: user.status
             }
         });
     } catch (error) {
