@@ -7,6 +7,88 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id             String               @id @default(uuid())
+  nombre         String
+  apellido       String
+  cedula         String               @unique
+  legajo         String               @unique
+  correo         String               @unique
+  telefono       String?
+  password_hash  String
+  role           Role                 @default(usuario)
+  status         String               @default("pendiente")
+  created_at     DateTime             @default(now())
+  reservations   Reservation[]
+  historyChanges ReservationHistory[] @relation("ChangedBy")
+  logs           SystemLog[]
+}
+
+model Location {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+  cabins      Cabin[]
+}
+
+model Cabin {
+  id            String        @id @default(uuid())
+  location_id   String
+  identifier    String        @unique
+  capacity      Int?
+  status        String        @default("disponible")
+  blocked_dates BlockedDate[]
+  location      Location      @relation(fields: [location_id], references: [id])
+  reservations  Reservation[]
+}
+
+model Reservation {
+  id         String               @id @default(uuid())
+  user_id    String
+  cabin_id   String
+  start_date DateTime             @db.Date
+  end_date   DateTime             @db.Date
+  occupants  Int                  @default(1)
+  status     Status               @default(pendiente)
+  created_at DateTime             @default(now())
+  cabin      Cabin                @relation(fields: [cabin_id], references: [id])
+  user       User                 @relation(fields: [user_id], references: [id])
+  history    ReservationHistory[]
+}
+
+model ReservationHistory {
+  id             String      @id @default(uuid())
+  reservation_id String
+  changed_by     String
+  old_status     String?
+  new_status     String
+  change_date    DateTime    @default(now())
+  comments       String?
+  changer        User        @relation("ChangedBy", fields: [changed_by], references: [id])
+  reservation    Reservation @relation(fields: [reservation_id], references: [id])
+}
+
+model SystemLog {
+  id          String   @id @default(uuid())
+  user_id     String?
+  action      String
+  entity_type String
+  entity_id   String?
+  details     String?
+  created_at  DateTime @default(now())
+  user        User?    @relation(fields: [user_id], references: [id])
+}
+
+model BlockedDate {
+  id         String   @id @default(uuid())
+  cabin_id   String?
+  start_date DateTime @db.Date
+  end_date   DateTime @db.Date
+  reason     String?
+  created_at DateTime @default(now())
+  cabin      Cabin?   @relation(fields: [cabin_id], references: [id])
+}
+
 enum Role {
   usuario
   administrador
@@ -18,93 +100,4 @@ enum Status {
   aprobada
   rechazada
   cancelada
-}
-
-model User {
-  id             String               @id @default(uuid())
-  nombre         String
-  apellido       String
-  cedula         String               @unique
-  legajo         String               @unique
-  correo         String               @unique
-  telefono       String?
-  password_hash  String
-  role           Role                 @default(usuario)
-  status         String               @default("pendiente") // "pendiente", "aprobado", "inactivo"
-  created_at     DateTime             @default(now())
-
-  reservations   Reservation[]
-  historyChanges ReservationHistory[] @relation("ChangedBy")
-  logs           SystemLog[]
-}
-
-model Location {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String?
-
-  cabins      Cabin[]
-}
-
-model Cabin {
-  id          String   @id @default(uuid())
-  location_id String
-  identifier  String   @unique
-  capacity    Int?
-  status      String   @default("disponible") // "disponible", "mantenimiento", "fuera_de_servicio"
-
-  location    Location @relation(fields: [location_id], references: [id])
-  reservations Reservation[]
-  blocked_dates BlockedDate[]
-}
-
-model Reservation {
-  id          String   @id @default(uuid())
-  user_id     String
-  cabin_id    String
-  start_date  DateTime @db.Date 
-  end_date    DateTime @db.Date 
-  occupants   Int      @default(1)
-  status      Status   @default(pendiente)
-  created_at  DateTime @default(now())
-
-  user        User     @relation(fields: [user_id], references: [id])
-  cabin       Cabin    @relation(fields: [cabin_id], references: [id])
-  history     ReservationHistory[]
-}
-
-model ReservationHistory {
-  id             String   @id @default(uuid())
-  reservation_id String
-  changed_by     String
-  old_status     String?
-  new_status     String
-  change_date    DateTime @default(now())
-  comments       String?
-
-  reservation    Reservation @relation(fields: [reservation_id], references: [id])
-  changer        User        @relation("ChangedBy", fields: [changed_by], references: [id])
-}
-
-model SystemLog {
-  id          String   @id @default(uuid())
-  user_id     String?
-  action      String
-  entity_type String
-  entity_id   String?
-  details     String?
-  created_at  DateTime @default(now())
-
-  user        User?    @relation(fields: [user_id], references: [id])
-}
-
-model BlockedDate {
-  id          String   @id @default(uuid())
-  cabin_id    String?  // Si es null, bloquea todas las cabañas
-  start_date  DateTime @db.Date
-  end_date    DateTime @db.Date
-  reason      String?
-  created_at  DateTime @default(now())
-
-  cabin       Cabin?   @relation(fields: [cabin_id], references: [id])
 }
