@@ -19,7 +19,8 @@ export default function Navbar() {
 
     if (!user) return null;
 
-    const isAdmin = user.role === 'administrador' || user.role === 'administrador_reservas';
+    const isSuperAdmin = user.role === 'super_admin';
+    const isAdmin = user.role === 'super_admin' || user.role === 'admin_biena';
 
     const navLinks = [
         { to: "/reserve", icon: <CompassLogo size={18} bgColor="transparent" />, label: "NUEVA RESERVA" },

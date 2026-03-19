@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecreto_armada_2026';
 
 export const register = async (req: Request, res: Response) => {
     try {
-        const { nombre, apellido, cedula, legajo, correo, telefono, password } = req.body;
+        const { nombre, apellido, cedula, legajo, jerarquia, correo, telefono, password } = req.body;
 
         // Check if user exists
         const existingUser = await prisma.user.findFirst({
@@ -19,7 +19,7 @@ export const register = async (req: Request, res: Response) => {
         });
 
         if (existingUser) {
-            return res.status(400).json({ error: 'Ya existe un usuario con esa cédula, legajo o correo.' });
+            return res.status(400).json({ error: 'Ya existe un usuario con esa cédula, legajo/matrícula o correo.' });
         }
 
         const password_hash = await bcrypt.hash(password, 10);
@@ -30,9 +30,11 @@ export const register = async (req: Request, res: Response) => {
                 apellido,
                 cedula,
                 legajo,
+                jerarquia: jerarquia as any,
                 correo,
                 telefono,
-                password_hash
+                password_hash: await bcrypt.hash(password, 10),
+                status: 'pendiente' // Asegurar estado pendiente
             }
         });
 
@@ -41,7 +43,7 @@ export const register = async (req: Request, res: Response) => {
             console.error('Error enviando email en el background:', err);
         });
 
-        res.status(201).json({ message: 'Usuario registrado exitosamente', userId: newUser.id });
+        res.status(201).json({ message: 'Usuario registrado exitosamente. Su cuenta está pendiente de aprobación.', userId: newUser.id });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error al registrar el usuario.' });
@@ -89,6 +91,7 @@ export const login = async (req: Request, res: Response) => {
                 apellido: user.apellido,
                 correo: user.correo,
                 role: user.role,
+                jerarquia: user.jerarquia,
                 status: user.status
             }
         });

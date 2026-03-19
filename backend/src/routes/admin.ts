@@ -9,11 +9,19 @@ import {
     deleteLocation,
     getBlockedDates,
     createBlockedDate,
-    deleteBlockedDate
+    deleteBlockedDate,
+    getEstivalPeriods,
+    createEstivalPeriod,
+    updateEstivalPeriod,
+    deleteEstivalPeriod,
+    getAdminStats
 } from '../controllers/adminController';
 import { authenticate, requireAdmin } from '../middlewares/authMiddleware';
 
 const router = Router();
+
+// Stats
+router.get('/stats', authenticate, requireAdmin, getAdminStats);
 
 // Sedes (Locations)
 router.get('/locations', authenticate, requireAdmin, getLocations);
@@ -30,5 +38,11 @@ router.delete('/cabins/:id', authenticate, requireAdmin, deleteCabin);
 router.get('/blocked-dates', authenticate, requireAdmin, getBlockedDates);
 router.post('/blocked-dates', authenticate, requireAdmin, createBlockedDate);
 router.delete('/blocked-dates/:id', authenticate, requireAdmin, deleteBlockedDate);
+
+// Periodos estivales
+router.get('/estival-periods', authenticate, requireAdmin, getEstivalPeriods);
+router.post('/estival-periods', authenticate, requireAdmin, createEstivalPeriod);
+router.put('/estival-periods/:id', authenticate, requireAdmin, updateEstivalPeriod);
+router.delete('/estival-periods/:id', authenticate, requireAdmin, deleteEstivalPeriod);
 
 export default router;

@@ -2,6 +2,7 @@ import { Response, Request } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middlewares/authMiddleware';
 import { sendUserStatusUpdatedEmail } from '../services/emailService';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -20,11 +21,12 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
                 apellido: true,
                 cedula: true,
                 legajo: true,
+                jerarquia: true,
                 correo: true,
                 telefono: true,
-                role: true,
                 status: true,
-                created_at: true
+                role: true,
+                created_at: true,
             }
         });
 
@@ -52,6 +54,7 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
                 correo: true,
                 telefono: true,
                 role: true,
+                jerarquia: true,
                 status: true,
                 created_at: true
             },
@@ -107,7 +110,7 @@ export const updateUserRole = async (req: AuthRequest, res: Response) => {
         const { role } = req.body;
         const adminId = req.user?.id;
 
-        if (!['usuario', 'administrador', 'administrador_reservas'].includes(role)) {
+        if (!['common_user', 'super_admin', 'admin_biena'].includes(role)) {
             return res.status(400).json({ error: 'Rol inválido' });
         }
 
@@ -162,5 +165,44 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error al eliminar usuario. Puede que tenga reservas asociadas.' });
+    }
+};
+
+export const resetUserPassword = async (req: AuthRequest, res: Response) => {
+    try {
+        const id = req.params.id as string;
+        const { newPassword } = req.body;
+        const adminId = req.user?.id;
+
+        if (!newPassword || newPassword.length < 6) {
+            return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+        }
+
+        const user = await prisma.user.findUnique({ where: { id } });
+        if (!user) {
+            return res.status(404).json({ error: 'Usuario no encontrado.' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await prisma.user.update({
+            where: { id },
+            data: { password_hash: hashedPassword }
+        });
+
+        await prisma.systemLog.create({
+            data: {
+                user_id: adminId,
+                action: 'reset_user_password',
+                entity_type: 'User',
+                entity_id: id,
+                details: `Contraseña reestablecida manualmente para el usuario: ${user.correo}`
+            }
+        });
+
+        res.json({ message: 'Contraseña actualizada exitosamente.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al reestablecer la contraseña.' });
     }
 };

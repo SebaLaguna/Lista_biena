@@ -26,14 +26,14 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
 };
 
 export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user || (req.user.role !== 'administrador' && req.user.role !== 'administrador_reservas')) {
+    if (!req.user || (req.user.role !== 'super_admin' && req.user.role !== 'admin_biena')) {
         return res.status(403).json({ error: 'Acceso denegado. Se requiere rol de administrador.' });
     }
     next();
 };
 
 export const requireSuperAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user || req.user.role !== 'administrador') {
+    if (!req.user || req.user.role !== 'super_admin') {
         return res.status(403).json({ error: 'Acceso denegado. Se requiere rol de administrador principal.' });
     }
     next();

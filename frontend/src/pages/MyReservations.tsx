@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, MapPin, Clock, Anchor, Ship, ShieldCheck, Search } from 'lucide-react';
+import { Calendar, MapPin, Clock, Anchor, Ship, ShieldCheck, Search, X, RefreshCw } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import CompassLogo from '../components/CompassLogo';
@@ -13,13 +13,51 @@ export default function MyReservations() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterDateRange, setFilterDateRange] = useState<[Date | null, Date | null]>([null, null]);
     const [filterStart, filterEnd] = filterDateRange;
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [cancelModalOpen, setCancelModalOpen] = useState(false);
+    const [cancelReservationId, setCancelReservationId] = useState<string | null>(null);
+    const [cancelReason, setCancelReason] = useState('');
 
-    useEffect(() => {
+    const loadReservations = () => {
+        setLoading(true);
         api.get('/reservations/me')
             .then(res => setReservations(res.data))
             .catch(err => console.error(err))
             .finally(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        loadReservations();
     }, []);
+
+    const handleCancelClick = (id: string) => {
+        setCancelReservationId(id);
+        setCancelReason('');
+        setCancelModalOpen(true);
+    };
+
+    const handleConfirmCancel = async () => {
+        if (!cancelReservationId) return;
+        if (cancelReason.trim().length < 5) {
+            alert('Por favor detalle un motivo válido de cancelación.');
+            return;
+        }
+
+        setActionLoading(cancelReservationId);
+        try {
+            await api.put(`/reservations/${cancelReservationId}/cancel`, { comments: cancelReason });
+            loadReservations();
+            setCancelModalOpen(false);
+            setCancelReservationId(null);
+            setCancelReason('');
+            alert('Su reserva ha sido cancelada y la administración notificada.');
+        } catch (err: any) {
+            console.error(err);
+            alert(err.response?.data?.error || 'Error al cancelar la reserva');
+        } finally {
+            setActionLoading(null);
+        }
+    };
 
     const getStatusStyles = (status: string) => {
         switch (status) {
@@ -177,17 +215,92 @@ export default function MyReservations() {
                                     </div>
 
                                     {reservation.status === 'pendiente' && (
-                                        <div className="mt-6 flex items-center gap-3 bg-white p-3 rounded border border-armada-gold/20 shadow-sm">
-                                            <ShieldCheck size={16} className="text-armada-gold shrink-0" />
-                                            <p className="text-[8px] md:text-[9px] font-bold text-armada-navy uppercase leading-tight italic">
-                                                Esta solicitud se encuentra bajo revisión de BIENA.
-                                            </p>
+                                        <div className="mt-6 space-y-3">
+                                            <div className="flex items-center gap-3 bg-white p-3 rounded border border-armada-gold/20 shadow-sm">
+                                                <ShieldCheck size={16} className="text-armada-gold shrink-0" />
+                                                <p className="text-[8px] md:text-[9px] font-bold text-armada-navy uppercase leading-tight italic">
+                                                    Esta solicitud se encuentra bajo revisión de BIENA.
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={() => handleCancelClick(reservation.id)}
+                                                disabled={actionLoading === reservation.id}
+                                                className="w-full flex items-center justify-center gap-2 py-2.5 rounded border-2 border-slate-200 text-slate-500 hover:border-red-500 hover:text-red-500 hover:bg-red-50 transition-all font-black text-[10px] uppercase tracking-widest disabled:opacity-50"
+                                            >
+                                                {actionLoading === reservation.id ? <RefreshCw size={14} className="animate-spin" /> : <X size={14} strokeWidth={3} />}
+                                                Cancelar Solicitud
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {reservation.status === 'aprobada' && new Date(reservation.start_date) > new Date() && (
+                                        <div className="mt-6 space-y-3">
+                                            <button
+                                                onClick={() => handleCancelClick(reservation.id)}
+                                                disabled={actionLoading === reservation.id}
+                                                className="w-full flex items-center justify-center gap-2 py-2.5 rounded border-2 border-slate-200 text-slate-500 hover:border-red-500 hover:text-red-500 hover:bg-red-50 transition-all font-black text-[10px] uppercase tracking-widest disabled:opacity-50"
+                                            >
+                                                {actionLoading === reservation.id ? <RefreshCw size={14} className="animate-spin" /> : <X size={14} strokeWidth={3} />}
+                                                Cancelar Reserva Aprobada
+                                            </button>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Cancel Modal */}
+            {cancelModalOpen && (
+                <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden border-t-4 border-red-500">
+                        <div className="p-6 md:p-8">
+                            <h3 className="text-xl font-black text-armada-navy uppercase tracking-tighter mb-4 flex items-center gap-2">
+                                <X className="text-red-500" strokeWidth={3} /> Anular Solicitud
+                            </h3>
+                            
+                            {(() => {
+                                const res = reservations.find(r => r.id === cancelReservationId);
+                                if (res?.isPenalizedCancel) {
+                                    return (
+                                        <div className="bg-red-50 border border-red-200 rounded p-4 mb-6">
+                                            <p className="text-[10px] font-black text-red-800 uppercase tracking-widest leading-tight mb-2">Aviso Importante sobre Penalizaciones</p>
+                                            <p className="text-xs text-red-700 font-medium">
+                                                Actualmente su reserva rige bajo las políticas de <b>Período {res.cancelPeriodType}</b>. Como está cancelando con menos de <b>{res.cancelLimitHours} horas</b> de anticipación al inicio de su estancia, se le cobrará la tarifa de la semana completa como penalidad por cancelación tardía.
+                                            </p>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            })()}
+
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Motivo obligatorio de Cancelación</p>
+                            <textarea
+                                className="w-full border-2 border-slate-200 rounded p-3 text-sm resize-none focus:border-armada-navy outline-none font-medium h-28"
+                                placeholder="Escriba aquí los detalles y razones por las que debe cancelar esta reserva. Esta información será remitida de forma automática a la administración de BIENA."
+                                value={cancelReason}
+                                onChange={(e) => setCancelReason(e.target.value)}
+                            />
+
+                            <div className="flex justify-end gap-3 mt-6">
+                                <button
+                                    onClick={() => setCancelModalOpen(false)}
+                                    className="px-5 py-2.5 rounded font-black text-[10px] uppercase tracking-widest text-slate-500 hover:bg-slate-100 transition-colors"
+                                >
+                                    Volver
+                                </button>
+                                <button
+                                    onClick={handleConfirmCancel}
+                                    disabled={actionLoading !== null || cancelReason.length < 5}
+                                    className="px-5 py-2.5 rounded font-black text-[10px] uppercase tracking-widest bg-red-500 hover:bg-red-600 text-white shadow-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {actionLoading ? 'Procesando...' : 'Confirmar Cancelación'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getProfile, getUsers, updateUserStatus, updateUserRole, deleteUser } from '../controllers/userController';
+import { getProfile, getUsers, updateUserStatus, updateUserRole, deleteUser, resetUserPassword } from '../controllers/userController';
 import { authenticate, requireAdmin, requireSuperAdmin } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -14,5 +14,6 @@ router.patch('/:id/status', authenticate, requireAdmin, updateUserStatus);
 // Rutas exclusivas SuperAdmin
 router.patch('/:id/role', authenticate, requireSuperAdmin, updateUserRole);
 router.delete('/:id', authenticate, requireSuperAdmin, deleteUser);
+router.put('/:id/reset-password', authenticate, requireSuperAdmin, resetUserPassword);
 
 export default router;

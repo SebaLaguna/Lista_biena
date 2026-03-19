@@ -6,16 +6,20 @@ import {
     getAdminReservations,
     updateReservationStatus,
     getUserHistory,
-    deleteReservation
+    deleteReservation,
+    cancelMyReservation,
+    getPublicEstivalPeriods
 } from '../controllers/reservationController';
 import { authenticate, requireAdmin, requireSuperAdmin } from '../middlewares/authMiddleware';
 
 const router = Router();
 
 // Rutas de Usuario
+router.get('/estival-periods', authenticate, getPublicEstivalPeriods);
 router.get('/availability', authenticate, checkAvailability);
 router.post('/', authenticate, createReservation);
 router.get('/me', authenticate, getMyReservations);
+router.put('/:id/cancel', authenticate, cancelMyReservation);
 
 // Rutas de Administrador
 router.get('/admin', authenticate, requireAdmin, getAdminReservations);

@@ -4,9 +4,11 @@ import api from '../services/api';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { es } from 'date-fns/locale';
-import { eachDayOfInterval, differenceInDays } from 'date-fns';
-import { MapPin, Calendar, ChevronRight, Info, AlertCircle, CheckCircle2, Users, X } from 'lucide-react';
+import { addDays, eachDayOfInterval, differenceInDays } from 'date-fns';
+import { parseDateSafe } from '../utils/dateUtils';
+import { MapPin, ChevronRight, Info, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import CompassLogo from '../components/CompassLogo';
+import { useAuth } from '../context/AuthContext';
 
 interface Cabin {
     id: string;
@@ -22,7 +24,14 @@ interface Location {
 }
 
 export default function Reserve() {
+    const { user } = useAuth();
     const [locations, setLocations] = useState<Location[]>([]);
+    
+    // Reglas de anticipación por jerarquía
+    const isRetired = user?.jerarquia === 'RET';
+    const anticipationDays = isRetired ? 45 : 60;
+    const maxDateLimit = addDays(new Date(), anticipationDays);
+
     const [selectedLocation, setSelectedLocation] = useState<string>('');
     const [selectedCabin, setSelectedCabin] = useState<string>('');
 
@@ -34,6 +43,10 @@ export default function Reserve() {
     const [bienaBlockedDates, setBienaBlockedDates] = useState<Date[]>([]);
     const [pendingDates, setPendingDates] = useState<Date[]>([]);
     const [showPendingWarning, setShowPendingWarning] = useState(false);
+    
+    // Periodos Estivales
+    const [estivalPeriods, setEstivalPeriods] = useState<any[]>([]);
+    const [estivalDates, setEstivalDates] = useState<Date[]>([]);
 
     // Ocupantes y términos
     const [occupants, setOccupants] = useState<number>(1);
@@ -48,6 +61,21 @@ export default function Reserve() {
         api.get('/cabins')
             .then(res => setLocations(res.data))
             .catch(err => console.error(err));
+            
+        api.get('/reservations/estival-periods')
+            .then(res => {
+                setEstivalPeriods(res.data);
+                let dates: Date[] = [];
+                res.data.forEach((ep: any) => {
+                    const days = eachDayOfInterval({ 
+                        start: parseDateSafe(ep.start_date), 
+                        end: parseDateSafe(ep.end_date) 
+                    });
+                    dates = [...dates, ...days];
+                });
+                setEstivalDates(dates);
+            })
+            .catch(err => console.error("Error al obtener periodos estivales", err));
     }, []);
 
     useEffect(() => {
@@ -66,13 +94,12 @@ export default function Reserve() {
 
     const fetchAvailability = async () => {
         setLoading(true);
-        // Traemos datos desde hoy hasta 1 año adelante
+        // OPTIMIZACIÓN CRÍTICA: En lugar de pedir 1 año completo, solo pedimos hasta el límite de anticipación + margen
         const today = new Date();
-        const nextYear = new Date();
-        nextYear.setFullYear(today.getFullYear() + 1);
+        const maxFetchDate = addDays(today, anticipationDays + 15); // +15 días para cubrir cierre de mes
 
         try {
-            const res = await api.get(`/reservations/availability?location_id=${selectedLocation}&start_date=${today.toISOString()}&end_date=${nextYear.toISOString()}`);
+            const res = await api.get(`/reservations/availability?location_id=${selectedLocation}&start_date=${today.toISOString()}&end_date=${maxFetchDate.toISOString()}`);
             const { reservations, blockedDates } = res.data;
 
             let disabled: Date[] = [];
@@ -83,8 +110,8 @@ export default function Reserve() {
             // Blocked from reservations
             reservations.forEach((r: any) => {
                 if (r.cabin_id === selectedCabin) {
-                    const rStart = new Date(r.start_date);
-                    const rEnd = new Date(r.end_date);
+                    const rStart = parseDateSafe(r.start_date);
+                    const rEnd = parseDateSafe(r.end_date);
                     const days = eachDayOfInterval({ start: rStart, end: rEnd });
 
                     if (r.status === 'aprobada') {
@@ -99,8 +126,8 @@ export default function Reserve() {
             // Blocked by BIENA administration
             blockedDates.forEach((b: any) => {
                 if (!b.cabin_id || b.cabin_id === selectedCabin) {
-                    const bStart = new Date(b.start_date);
-                    const bEnd = new Date(b.end_date);
+                    const bStart = parseDateSafe(b.start_date);
+                    const bEnd = parseDateSafe(b.end_date);
                     const days = eachDayOfInterval({ start: bStart, end: bEnd });
                     disabled = [...disabled, ...days];
                     bienaBlocked = [...bienaBlocked, ...days];
@@ -126,6 +153,14 @@ export default function Reserve() {
         setError('');
         setShowPendingWarning(false);
 
+        if (start) {
+            if (start > maxDateLimit) {
+                setError(`Como usuario con jerarquía ${user?.jerarquia}, solo puede reservar con hasta ${anticipationDays} días de anticipación.`);
+                setStartDate(null);
+                return;
+            }
+        }
+
         if (start && end) {
             const diffDays = differenceInDays(end, start);
             if (diffDays > 7) {
@@ -147,13 +182,13 @@ export default function Reserve() {
     const selectedLocData = locations.find(l => l.id === selectedLocation);
     const selectedCabinData = selectedLocData?.cabins.find(c => c.id === selectedCabin);
 
-    const handleBooking = async () => {
-        if (!selectedCabin || !startDate || !endDate) return;
-        if (!acceptedTerms) {
-            setError('Debe aceptar las Condiciones de Uso para solicitar la reserva.');
-            return;
-        }
+    // Cálculos para el resumen
+    const reservationDuration = (startDate && endDate) ? differenceInDays(endDate, startDate) : 0;
+    const canSubmit = selectedCabin && startDate && endDate && acceptedTerms && !loading;
 
+    const handleBooking = async () => {
+        if (!canSubmit) return;
+        
         if (selectedCabinData && occupants > selectedCabinData.capacity) {
             setError(`La capacidad máxima de la cabaña es de ${selectedCabinData.capacity} ocupantes.`);
             return;
@@ -181,272 +216,293 @@ export default function Reserve() {
     };
 
     return (
-        <div className="w-full space-y-8 md:space-y-12 py-4 md:py-8 px-4 sm:px-6 lg:px-10">
-            <header className="border-b-4 border-armada-gold pb-6 animate-fade-in-up">
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-                    <div className="bg-armada-navy p-3 rounded shadow-xl shrink-0">
-                        <CompassLogo className="text-armada-gold" size={32} bgColor="white" />
+        <div className="w-full max-w-[1400px] mx-auto py-4 md:py-6 px-4 sm:px-6 lg:px-8">
+            <header className="border-b-2 border-armada-gold pb-4 mb-8 animate-fade-in-up">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                    <div className="bg-armada-navy p-2 rounded shadow-lg shrink-0">
+                        <CompassLogo className="text-armada-gold" size={28} bgColor="white" />
                     </div>
-                    <div className="flex-1">
-                        <h2 className="text-2xl md:text-3xl font-black text-armada-navy uppercase tracking-tighter">Nueva Solicitud de Reserva</h2>
-                        <div className="h-0.5 w-full max-w-[12rem] bg-armada-gold my-2 mx-auto sm:mx-0" />
-                        <p className="text-slate-500 font-medium text-[10px] md:text-sm italic uppercase tracking-widest">Formulario Oficial de Alojamiento — Servicio de Bienestar</p>
+                    <div className="flex-1 text-center sm:text-left">
+                        <h2 className="text-xl md:text-2xl font-black text-armada-navy uppercase tracking-tighter">Reserva de Alojamiento</h2>
+                        <p className="text-slate-500 font-bold text-[9px] uppercase tracking-[0.2em] italic">Servicio de Bienestar Social — Armada Nacional</p>
                     </div>
                 </div>
             </header>
 
-            {/* Alerta Flotante */}
+            {/* Notificaciones */}
             {error && (
-                <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4 animate-fade-in">
-                    <div className="bg-red-50 text-red-700 p-4 rounded border-l-8 border-red-500 shadow-2xl flex items-center gap-4 relative">
-                        <AlertCircle size={24} className="shrink-0" />
-                        <span className="font-bold text-xs md:text-sm uppercase tracking-tight pr-8">{error}</span>
-                        <button
-                            onClick={() => setError('')}
-                            className="absolute right-2 top-2 p-1 hover:bg-red-100 rounded-full transition-colors"
-                        >
-                            <X size={16} />
-                        </button>
+                <div className="fixed top-20 right-4 z-50 w-full max-w-md animate-fade-in">
+                    <div className="bg-red-50 text-red-700 p-4 rounded border-r-8 border-red-500 shadow-2xl flex items-center gap-4 relative">
+                        <AlertCircle size={20} className="shrink-0 text-red-500" />
+                        <span className="font-black text-[10px] uppercase tracking-tight pr-6">{error}</span>
+                        <button onClick={() => setError('')} className="absolute right-2 top-2 p-1 hover:bg-red-100 rounded-full"><X size={14} /></button>
                     </div>
                 </div>
             )}
 
             {success && (
-                <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4 animate-fade-in">
-                    <div className="bg-green-50 text-green-700 p-4 rounded border-l-8 border-green-500 shadow-2xl flex items-center gap-4">
-                        <CheckCircle2 size={24} className="shrink-0" />
-                        <span className="font-bold text-xs md:text-sm uppercase tracking-tight">{success}</span>
+                <div className="fixed top-20 right-4 z-50 w-full max-w-md animate-fade-in">
+                    <div className="bg-green-50 text-green-700 p-4 rounded border-r-8 border-green-500 shadow-2xl flex items-center gap-4">
+                        <CheckCircle2 size={20} className="shrink-0 text-green-500" />
+                        <span className="font-black text-[10px] uppercase tracking-tight">{success}</span>
                     </div>
                 </div>
             )}
 
-            <div className="space-y-10 md:space-y-16">
-                {/* Paso 1: Ubicación */}
-                <section className="relative animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-armada-navy text-armada-gold flex items-center justify-center font-black text-md md:text-lg border-2 border-armada-gold shadow-md shrink-0">1</div>
-                        <h3 className="text-xs md:text-sm font-black text-armada-navy uppercase tracking-[0.2em] italic">Elegir Destino Naval</h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                        {locations.map(loc => (
-                            <button
-                                key={loc.id}
-                                onClick={() => { setSelectedLocation(loc.id); setSelectedCabin(''); }}
-                                className={`p-5 md:p-6 rounded institutional-card text-left transition-all relative overflow-hidden group ${selectedLocation === loc.id
-                                    ? 'border-armada-navy ring-2 ring-armada-gold/20 bg-slate-50'
-                                    : 'border-slate-200 hover:border-armada-gold opacity-80 hover:opacity-100 bg-white'
-                                    }`}
-                            >
-                                <MapPin size={20} className={`mb-3 transition-colors ${selectedLocation === loc.id ? 'text-armada-gold' : 'text-slate-300'}`} />
-                                <div className="font-black text-sm md:text-base text-armada-navy uppercase tracking-tight">{loc.name}</div>
-                                {selectedLocation === loc.id && (
-                                    <div className="absolute top-4 right-4 text-armada-gold">
-                                        <CompassLogo size={14} bgColor="transparent" />
-                                    </div>
-                                )}
-                            </button>
-                        ))}
-                    </div>
-                </section>
-
-                {/* Paso 2: Cabaña */}
-                {selectedLocation && (
-                    <section className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-armada-navy text-armada-gold flex items-center justify-center font-black text-md md:text-lg border-2 border-armada-gold shadow-md shrink-0">2</div>
-                            <h3 className="text-xs md:text-sm font-black text-armada-navy uppercase tracking-[0.2em] italic">Seleccionar Unidad Habitacional</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* COLUMNA IZQUIERDA: SELECCIÓN */}
+                <div className="lg:col-span-8 space-y-6">
+                    
+                    {/* 1. DESTINO */}
+                    <section className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm animate-fade-in-up">
+                        <div className="flex items-center gap-3 mb-4">
+                            <span className="w-6 h-6 rounded-full bg-armada-navy text-armada-gold flex items-center justify-center font-black text-xs border border-armada-gold">1</span>
+                            <h3 className="text-[10px] font-black text-armada-navy uppercase tracking-widest italic">Destino Naval</h3>
                         </div>
-
-                        <div className="bg-white p-6 md:p-8 rounded institutional-card grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-12 gap-3">
-                            {selectedLocData?.cabins
-                                .filter(c => c.status === 'disponible')
-                                .sort((a, b) => a.identifier.localeCompare(b.identifier, undefined, { numeric: true, sensitivity: 'base' }))
-                                .map(cabin => (
-                                    <button
-                                        key={cabin.id}
-                                        onClick={() => setSelectedCabin(cabin.id)}
-                                        className={`py-3 px-3 rounded font-black text-[10px] md:text-xs transition-all border-2 uppercase tracking-tighter ${selectedCabin === cabin.id
-                                            ? 'bg-armada-navy text-armada-gold border-armada-gold shadow-lg'
-                                            : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-300'
-                                            }`}
-                                    >
-                                        <div>{cabin.identifier}</div>
-                                        <div className={`text-[8px] mt-1 opacity-70 ${selectedCabin === cabin.id ? 'text-white' : 'text-slate-500'}`}>Max: {cabin.capacity}</div>
-                                    </button>
-                                ))}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {locations.map(loc => (
+                                <button
+                                    key={loc.id}
+                                    onClick={() => { setSelectedLocation(loc.id); setSelectedCabin(''); }}
+                                    className={`p-3 rounded border-2 text-left transition-all relative group ${selectedLocation === loc.id
+                                        ? 'border-armada-navy bg-slate-50 ring-1 ring-armada-gold/30'
+                                        : 'border-slate-100 hover:border-armada-gold/50 bg-white'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <MapPin size={14} className={selectedLocation === loc.id ? 'text-armada-gold' : 'text-slate-300'} />
+                                        <span className="font-black text-[11px] text-armada-navy uppercase truncate">{loc.name}</span>
+                                    </div>
+                                    {selectedLocation === loc.id && <div className="absolute top-1 right-1 text-armada-gold animate-pulse"><CompassLogo size={10} bgColor="transparent" /></div>}
+                                </button>
+                            ))}
                         </div>
                     </section>
-                )}
 
-                {/* Paso 3: Calendario y Datos Adicionales */}
-                {selectedCabin && (
-                    <section className="animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-armada-navy text-armada-gold flex items-center justify-center font-black text-md md:text-lg border-2 border-armada-gold shadow-md shrink-0">3</div>
-                            <h3 className="text-xs md:text-sm font-black text-armada-navy uppercase tracking-[0.2em] italic">Cronograma y Ocupantes</h3>
-                        </div>
+                    {/* 2. UNIDAD */}
+                    {selectedLocation && (
+                        <section className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm animate-fade-in-up">
+                            <div className="flex items-center gap-3 mb-4">
+                                <span className="w-6 h-6 rounded-full bg-armada-navy text-armada-gold flex items-center justify-center font-black text-xs border border-armada-gold">2</span>
+                                <h3 className="text-[10px] font-black text-armada-navy uppercase tracking-widest italic">Unidad Habitacional</h3>
+                            </div>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                {selectedLocData?.cabins
+                                    .filter(c => c.status === 'disponible')
+                                    .filter(c => {
+                                        const allowed = (c as any).allowed_hierarchies;
+                                        if (!allowed || allowed.length === 0) return true;
+                                        return allowed.includes(user?.jerarquia);
+                                    })
+                                    .sort((a, b) => a.identifier.localeCompare(b.identifier, undefined, { numeric: true }))
+                                    .map(cabin => (
+                                        <button
+                                            key={cabin.id}
+                                            onClick={() => setSelectedCabin(cabin.id)}
+                                            className={`p-2 rounded border-2 text-center transition-all ${selectedCabin === cabin.id
+                                                ? 'bg-armada-navy border-armada-gold text-armada-gold shadow-md'
+                                                : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-300'
+                                            }`}
+                                        >
+                                            <div className="font-black text-[10px] truncate">{cabin.identifier}</div>
+                                            <div className={`text-[8px] font-bold opacity-70 ${selectedCabin === cabin.id ? 'text-white' : 'text-slate-500'}`}>Cap: {cabin.capacity}</div>
+                                        </button>
+                                    ))}
+                            </div>
+                        </section>
+                    )}
 
-                        {loading ? (
-                            <div className="p-12 text-center text-armada-navy font-black animate-pulse italic text-xs md:text-sm">Verificando bases de datos de ocupación para la unidad {selectedCabinData?.identifier}...</div>
-                        ) : (
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                                {/* Calendario - Ocupa 8 columnas en lg */}
-                                <div className="lg:col-span-8 bg-white p-6 rounded institutional-card">
-                                    <div className="flex items-center justify-between gap-2 mb-4">
-                                        <label className="flex items-center gap-2 text-[10px] font-black text-armada-navy uppercase tracking-widest italic">
-                                            <Calendar size={14} className="text-armada-gold" />
-                                            Seleccionar Rango de Estancia (1 - 7 Días)
-                                        </label>
-                                        {(startDate || endDate) && (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setStartDate(null);
-                                                    setEndDate(null);
-                                                    setShowPendingWarning(false);
-                                                }}
-                                                className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-red-500 border border-slate-200 hover:border-red-300 rounded px-3 py-1.5 transition-all shrink-0"
-                                            >
-                                                <X size={10} strokeWidth={3} /> Borrar selección
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div className="custom-datepicker flex justify-center">
-                                        <DatePicker
-                                            selected={startDate}
-                                            onChange={onChangeDates}
-                                            startDate={startDate}
-                                            endDate={endDate}
-                                            selectsRange
-                                            inline
-                                            locale={es}
-                                            minDate={new Date()}
-                                            excludeDates={disabledDates}
-                                            highlightDates={[
-                                                { "react-datepicker__day--highlight-approved": approvedDates },
-                                                { "react-datepicker__day--highlight-biena-blocked": bienaBlockedDates },
-                                                { "react-datepicker__day--highlight-pending": pendingDates }
-                                            ]}
-                                            monthsShown={window.innerWidth > 768 ? 2 : 1}
-                                        />
-                                    </div>
-
-                                    {showPendingWarning && (
-                                        <div className="mt-4 bg-amber-50 text-amber-800 p-3 rounded border-l-4 border-amber-500 text-xs md:text-sm flex items-start gap-3 animate-fade-in">
-                                            <Info size={16} className="shrink-0 mt-0.5 text-amber-600" />
-                                            <div>
-                                                <strong className="block mb-1">Aviso de Sobre-demanda</strong>
-                                                Algunos días seleccionados ya tienen solicitudes de reserva de otros camaradas en estado "Pendiente". Puedes continuar, pero tu solicitud entrará en cola de revisión administrativa.
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Leyenda de colores */}
-                                    <div className="mt-4 pt-4 border-t border-slate-100">
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-3">Leyenda del Calendario</p>
-                                        <div className="flex flex-wrap gap-3">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-5 h-5 rounded bg-green-100 border border-green-400 shadow-sm shrink-0"></div>
-                                                <span className="text-[10px] font-bold text-slate-600">Disponible</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-5 h-5 rounded bg-blue-500 shadow-sm shrink-0"></div>
-                                                <span className="text-[10px] font-bold text-slate-600">Tu Selección</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-5 h-5 rounded bg-red-200 border border-red-400 shadow-sm shrink-0"></div>
-                                                <span className="text-[10px] font-bold text-slate-600">Reservado (Aprobado)</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-5 h-5 rounded bg-orange-100 border border-orange-400 shadow-sm shrink-0"></div>
-                                                <span className="text-[10px] font-bold text-slate-600">Bloqueado por BIENA</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-5 h-5 rounded bg-yellow-200 border border-yellow-400 shadow-sm shrink-0"></div>
-                                                <span className="text-[10px] font-bold text-slate-600">Solicitud Pendiente</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                    {/* 3. CALENDARIO */}
+                    {selectedCabin && (
+                        <section className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm animate-fade-in-up">
+                            <div className="flex items-center justify-between gap-4 mb-4">
+                                <div className="flex items-center gap-3">
+                                    <span className="w-6 h-6 rounded-full bg-armada-navy text-armada-gold flex items-center justify-center font-black text-xs border border-armada-gold">3</span>
+                                    <h3 className="text-[10px] font-black text-armada-navy uppercase tracking-widest italic">Cronograma de Estancia</h3>
+                                    <span className="text-[8px] font-bold text-slate-400 uppercase ml-2">
+                                        (Anticipación permitida: {anticipationDays} días para {user?.jerarquia})
+                                    </span>
                                 </div>
+                                {(startDate || endDate) && (
+                                    <button onClick={() => { setStartDate(null); setEndDate(null); }} className="text-[9px] font-black text-red-500 uppercase hover:underline">Limpiar Fechas</button>
+                                )}
+                            </div>
 
-                                {/* Ocupantes y Confirmación - Ocupa 4 columnas en lg */}
-                                <div className="lg:col-span-4 space-y-6">
-                                    <div className="bg-white p-6 rounded institutional-card">
-                                        <label className="flex items-center gap-2 text-[10px] font-black text-armada-navy uppercase tracking-widest italic mb-4">
-                                            <Users size={14} className="text-armada-gold" />
-                                            Cantidad de Ocupantes
-                                        </label>
-                                        <div className="flex items-center gap-4">
-                                            <button
-                                                onClick={() => setOccupants(Math.max(1, occupants - 1))}
-                                                className="w-10 h-10 rounded bg-slate-100 text-armada-navy font-black text-lg hover:bg-armada-gold transition-colors"
-                                            >-</button>
-                                            <input
-                                                type="number"
-                                                readOnly
-                                                value={occupants}
-                                                onKeyDown={(e) => {
-                                                    if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Tab') {
-                                                        e.preventDefault();
-                                                    }
-                                                }}
-                                                className="flex-1 text-center bg-transparent border-b-2 border-armada-navy py-2 font-black text-xl outline-none"
-                                            />
-                                            <button
-                                                onClick={() => setOccupants(Math.min(selectedCabinData?.capacity || 10, occupants + 1))}
-                                                className="w-10 h-10 rounded bg-slate-100 text-armada-navy font-black text-lg hover:bg-armada-gold transition-colors"
-                                            >+</button>
-                                        </div>
-                                        <p className="text-[9px] text-slate-400 mt-4 text-center font-bold uppercase tracking-widest">
-                                            Capacidad máxima permitida: {selectedCabinData?.capacity} ocupantes.
-                                        </p>
-                                    </div>
+                            {/* LEYENDA ARRIBA */}
+                            <div className="flex flex-wrap gap-x-4 gap-y-2 mb-6 p-3 bg-slate-50 rounded border border-slate-100">
+                                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-green-100 border border-green-400"></div><span className="text-[9px] font-bold text-slate-600 uppercase">Disponible</span></div>
+                                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-blue-500"></div><span className="text-[9px] font-bold text-slate-600 uppercase">Tu Reserva</span></div>
+                                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-200 border border-red-400"></div><span className="text-[9px] font-bold text-slate-600 uppercase">Ocupado</span></div>
+                                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-orange-100 border border-orange-400"></div><span className="text-[9px] font-bold text-slate-600 uppercase">Bloqueado</span></div>
+                                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-yellow-200 border border-yellow-400"></div><span className="text-[9px] font-bold text-slate-600 uppercase">Pendiente</span></div>
+                                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-[#E6D5C3] border border-[#8B5A2B]"></div><span className="text-[9px] font-bold text-slate-600 uppercase">Estival</span></div>
+                            </div>
 
-                                    <div className="bg-slate-50 p-6 rounded border border-slate-200 space-y-4">
-                                        <div className="flex items-start gap-3">
-                                            <input
-                                                type="checkbox"
-                                                id="terms"
-                                                checked={acceptedTerms}
-                                                onChange={(e) => setAcceptedTerms(e.target.checked)}
-                                                className="w-5 h-5 mt-0.5 text-armada-gold accent-armada-gold bg-white border-slate-300 rounded cursor-pointer"
-                                            />
-                                            <label htmlFor="terms" className="text-[11px] md:text-xs font-bold text-armada-navy leading-tight cursor-pointer">
-                                                He leído y acepto las <Link to="/terms" target="_blank" className="text-armada-gold underline hover:text-armada-navy transition-colors">Condiciones de Uso</Link> vigentes para el alojamiento naval.
-                                            </label>
-                                        </div>
-                                    </div>
+                            <div className="custom-datepicker flex justify-center pb-4">
+                                <DatePicker
+                                    selected={startDate}
+                                    onChange={onChangeDates}
+                                    startDate={startDate}
+                                    endDate={endDate}
+                                    selectsRange
+                                    inline
+                                    locale={es}
+                                    minDate={new Date()}
+                                    maxDate={maxDateLimit}
+                                    excludeDates={disabledDates}
+                                    highlightDates={[
+                                        { "react-datepicker__day--highlight-approved": approvedDates },
+                                        { "react-datepicker__day--highlight-biena-blocked": bienaBlockedDates },
+                                        { "react-datepicker__day--highlight-pending": pendingDates },
+                                        { "react-datepicker__day--highlight-estival": estivalDates }
+                                    ]}
+                                    monthsShown={window.innerWidth > 1024 ? 2 : 1}
+                                    dayClassName={(date) => {
+                                        const isApproved = approvedDates.some(d => d.getTime() === date.getTime());
+                                        const isBiena = bienaBlockedDates.some(d => d.getTime() === date.getTime());
+                                        const isPending = pendingDates.some(d => d.getTime() === date.getTime());
+                                        const isPast = date < new Date(new Date().setHours(0,0,0,0));
+                                        const isTooFar = date > maxDateLimit;
 
-                                    <div className="bg-armada-navy/5 p-4 rounded-lg flex items-start gap-3 border-l-4 border-armada-gold">
-                                        <Info className="text-armada-navy shrink-0 mt-0.5" size={16} />
-                                        <p className="text-[10px] text-slate-600 font-medium leading-tight">
-                                            <span className="font-black text-armada-navy block mb-1">RECORDATORIO:</span>
-                                            Las solicitudes están sujetas a revisión del Mando Administrativo de BIENA. Solo una solicitud pendiente por funcionario.
-                                        </p>
-                                    </div>
+                                        if (isApproved || isBiena || isPast || isTooFar) return "cursor-not-allowed opacity-50";
+                                        if (isPending) return "cursor-pointer hover:bg-yellow-300 transition-colors";
+                                        return "hover:scale-110 transition-transform cursor-pointer";
+                                    }}
+                                    renderDayContents={(day, date) => {
+                                        if (!date) return day;
+                                        const isApproved = approvedDates.some(d => d.getTime() === date.getTime());
+                                        const isBiena = bienaBlockedDates.some(d => d.getTime() === date.getTime());
+                                        const isPending = pendingDates.some(d => d.getTime() === date.getTime());
+                                        const isTooFar = date > maxDateLimit;
+                                        const isPast = date < new Date(new Date().setHours(0,0,0,0));
+                                        const isEstival = estivalDates.some(d => d.getTime() === date.getTime());
+                                        
+                                        let tooltip = "Disponible";
+                                        if (isEstival) tooltip += " (Período Estival)";
+                                        if (isApproved) tooltip = "Reservado (Aprobado)";
+                                        if (isBiena) tooltip = "Bloqueado por Administración BIENA";
+                                        if (isPending) tooltip = "Solicitud en espera (Pendiente)";
+                                        if (isPast) tooltip = "Fecha pasada";
+                                        if (isTooFar) tooltip = `Límite de anticipación excedido (${anticipationDays} días para su jerarquía)`;
+
+                                        return (
+                                            <div title={tooltip} className="w-full h-full flex items-center justify-center">
+                                                {day}
+                                            </div>
+                                        );
+                                    }}
+                                />
+                            </div>
+
+                            {showPendingWarning && (
+                                <div className="mt-4 bg-amber-50 text-amber-800 p-3 rounded border-r-4 border-amber-500 text-[10px] flex items-center gap-3">
+                                    <Info size={16} className="text-amber-600 shrink-0" />
+                                    <p className="font-bold uppercase tracking-tight">Atención: Hay solicitudes pendientes para estos días. Tu reserva entrará en cola de revisión.</p>
+                                </div>
+                            )}
+                        </section>
+                    )}
+                </div>
+
+                {/* COLUMNA DERECHA: RESUMEN Y ACCIÓN */}
+                <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
+                    
+                    {/* CARD DE RESUMEN */}
+                    <div className="bg-armada-navy text-white p-6 rounded-lg shadow-2xl border-b-4 border-armada-gold animate-fade-in">
+                        <h3 className="text-xs font-black text-armada-gold uppercase tracking-[0.2em] mb-6 border-b border-white/10 pb-2 italic">Resumen de Reserva</h3>
+                        
+                        <div className="space-y-5">
+                            <div className="flex justify-between items-center group">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Unidad</span>
+                                <span className="text-sm font-black text-white uppercase">{selectedCabinData ? selectedCabinData.identifier : '---'}</span>
+                            </div>
+                            
+                            <div className="flex justify-between items-center">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Estancia</span>
+                                <div className="text-right">
+                                    <div className="text-[11px] font-black text-white">{startDate ? startDate.toLocaleDateString('es-ES') : '---'}</div>
+                                    <div className="text-[11px] font-black text-armada-gold">al {endDate ? endDate.toLocaleDateString('es-ES') : '---'}</div>
                                 </div>
                             </div>
-                        )}
-                    </section>
-                )}
 
-                {/* Confirmación Final */}
-                {selectedCabin && startDate && endDate && (
-                    <div className="pt-8 pb-12 flex flex-col items-center animate-fade-in">
-                        <div className="h-[2px] w-full bg-slate-100 mb-8" />
+                            {/* Temporada */}
+                            {startDate && endDate && (
+                                (() => {
+                                    const isEstivalSelection = estivalPeriods.some(ep => {
+                                        const epStart = parseDateSafe(ep.start_date);
+                                        const epEnd = parseDateSafe(ep.end_date);
+                                        return startDate <= epEnd && endDate >= epStart;
+                                    });
+                                    return (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Temporada</span>
+                                            <span className={`text-[10px] font-black tracking-wider uppercase px-2 py-0.5 rounded border border-white/10 ${isEstivalSelection ? 'bg-[#8B5A2B] text-[#FDF5E6]' : 'bg-slate-500/20 text-slate-300'}`}>
+                                                {isEstivalSelection ? 'Estival' : 'Normal'}
+                                            </span>
+                                        </div>
+                                    );
+                                })()
+                            )}
+
+                            <div className="flex justify-between items-center">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Duración</span>
+                                <span className="text-sm font-black text-white">{reservationDuration > 0 ? `${reservationDuration} Noches` : '---'}</span>
+                            </div>
+
+                            <div className="pt-4 border-t border-white/10">
+                                <label className="flex items-center justify-between mb-3">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ocupantes</span>
+                                    <div className="flex items-center gap-3 bg-white/5 rounded p-1">
+                                        <button onClick={() => setOccupants(Math.max(1, occupants - 1))} className="w-6 h-6 rounded bg-white/10 hover:bg-armada-gold text-white font-black text-xs transition-colors">-</button>
+                                        <span className="w-4 text-center font-black text-sm">{occupants}</span>
+                                        <button onClick={() => setOccupants(Math.min(selectedCabinData?.capacity || 10, occupants + 1))} className="w-6 h-6 rounded bg-white/10 hover:bg-armada-gold text-white font-black text-xs transition-colors">+</button>
+                                    </div>
+                                </label>
+                                {selectedCabinData && (
+                                    <p className="text-[8px] text-slate-400 text-right uppercase font-bold italic">Capacidad Máxima: {selectedCabinData.capacity} Personas</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* CONDICIONES */}
+                    <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm">
+                        <div className="flex items-start gap-3 p-3 rounded-md bg-slate-50 border border-slate-100 mb-4 transition-all hover:border-armada-gold/50">
+                            <input
+                                type="checkbox"
+                                id="terms_new"
+                                checked={acceptedTerms}
+                                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                                className="w-5 h-5 mt-0.5 accent-armada-navy cursor-pointer"
+                            />
+                            <label htmlFor="terms_new" className="text-[10px] font-bold text-armada-navy leading-tight cursor-pointer">
+                                Acepto las <Link to="/terms" target="_blank" className="text-armada-gold underline hover:text-armada-navy">Condiciones y Reglamentos</Link> de alojamiento institucional.
+                            </label>
+                        </div>
+                        
+                        {!canSubmit && selectedCabin && startDate && (
+                            <div className="text-center mb-4 p-2 bg-red-50 rounded border border-red-100 animate-pulse">
+                                <p className="text-[8px] font-black text-red-600 uppercase tracking-wider">Debe completar fechas y aceptar términos</p>
+                            </div>
+                        )}
+
                         <button
                             onClick={handleBooking}
-                            disabled={loading || !acceptedTerms}
-                            className="btn-armada flex items-center gap-6 py-5 px-12 group shadow-2xl disabled:opacity-50 w-full md:w-auto justify-center"
+                            disabled={!canSubmit}
+                            className={`w-full py-4 rounded-lg flex items-center justify-center gap-3 transition-all group ${canSubmit 
+                                ? 'bg-armada-navy text-white hover:bg-armada-black shadow-xl scale-100 hover:scale-[1.02]' 
+                                : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+                            }`}
                         >
-                            <span className="text-sm md:text-xl font-black italic tracking-[0.2em] underline underline-offset-8 decoration-armada-gold/50 group-hover:decoration-armada-gold">
-                                {loading ? 'REMITIENDO...' : 'REMITIR SOLICITUD A BIENA'}
-                            </span>
-                            <ChevronRight className="group-hover:translate-x-3 transition-transform text-armada-gold" size={28} />
+                            <span className="font-black text-xs uppercase tracking-[0.2em] italic">Confirmar Reserva a Biena</span>
+                            <ChevronRight size={20} className={canSubmit ? 'text-armada-gold group-hover:translate-x-1 transition-transform' : 'text-slate-300'} />
                         </button>
                     </div>
-                )}
+
+                    <p className="text-center text-[8px] font-black text-slate-300 uppercase tracking-[0.2em] italic px-4">
+                        La confirmación está sujeta a aprobación del Estado Mayor de Bienestar Social.
+                    </p>
+                </div>
             </div>
         </div>
     );

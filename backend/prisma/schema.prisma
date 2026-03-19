@@ -13,10 +13,11 @@ model User {
   apellido       String
   cedula         String               @unique
   legajo         String               @unique
+  jerarquia      Hierarchy
   correo         String               @unique
   telefono       String?
   password_hash  String
-  role           Role                 @default(usuario)
+  role           Role                 @default(common_user)
   status         String               @default("pendiente")
   created_at     DateTime             @default(now())
   reservations   Reservation[]
@@ -32,14 +33,15 @@ model Location {
 }
 
 model Cabin {
-  id            String        @id @default(uuid())
-  location_id   String
-  identifier    String        @unique
-  capacity      Int?
-  status        String        @default("disponible")
-  blocked_dates BlockedDate[]
-  location      Location      @relation(fields: [location_id], references: [id])
-  reservations  Reservation[]
+  id                  String        @id @default(uuid())
+  location_id         String
+  identifier          String        @unique
+  capacity            Int?
+  status              String        @default("disponible")
+  allowed_hierarchies Json?
+  blocked_dates       BlockedDate[]
+  location            Location      @relation(fields: [location_id], references: [id])
+  reservations        Reservation[]
 }
 
 model Reservation {
@@ -53,6 +55,7 @@ model Reservation {
   created_at DateTime             @default(now())
   cabin      Cabin                @relation(fields: [cabin_id], references: [id])
   user       User                 @relation(fields: [user_id], references: [id])
+  comments   String?
   history    ReservationHistory[]
 }
 
@@ -89,10 +92,18 @@ model BlockedDate {
   cabin      Cabin?   @relation(fields: [cabin_id], references: [id])
 }
 
+model EstivalPeriod {
+  id          String   @id @default(uuid())
+  start_date  DateTime @db.Date
+  end_date    DateTime @db.Date
+  description String?
+  created_at  DateTime @default(now())
+}
+
 enum Role {
-  usuario
-  administrador
-  administrador_reservas
+  common_user
+  admin_biena
+  super_admin
 }
 
 enum Status {
@@ -100,4 +111,23 @@ enum Status {
   aprobada
   rechazada
   cancelada
+}
+
+enum Hierarchy {
+  ALM
+  CA
+  CN
+  CF
+  CC
+  TN
+  AN
+  AF
+  GM
+  SOC
+  SOP
+  SOS
+  CP
+  CS
+  MP
+  RET
 }

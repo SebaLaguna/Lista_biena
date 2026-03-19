@@ -6,8 +6,10 @@ interface User {
     nombre: string;
     apellido: string;
     correo: string;
-    cedula?: string;
-    legajo?: string;
+    cedula: string;
+    legajo: string;
+    jerarquia: string;
+    status: string;
     role: string;
 }
 

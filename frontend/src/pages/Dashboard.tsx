@@ -7,7 +7,7 @@ export default function Dashboard() {
     const { user } = useAuth();
 
     if (!user) return null;
-    const isAdmin = user.role === 'administrador' || user.role === 'administrador_reservas';
+    const isAdmin = user.role === 'super_admin' || user.role === 'admin_biena';
 
     return (
         <div className="space-y-6 md:space-y-10 py-4 md:py-8 px-4 sm:px-6 lg:px-10">

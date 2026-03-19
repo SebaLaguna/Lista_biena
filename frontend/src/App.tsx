@@ -8,36 +8,41 @@ import Reserve from './pages/Reserve';
 import MyReservations from './pages/MyReservations';
 import AdminPanel from './pages/AdminPanel';
 import Terms from './pages/Terms';
+import NotFound from './pages/NotFound';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="p-8 text-center text-gray-500">Cargando...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-500 font-bold uppercase tracking-widest animate-pulse">Procesando Identidad Militar...</div>;
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-slate-50 flex flex-col font-sans transition-all duration-300">
-          <Navbar />
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <div className="min-h-screen bg-slate-50 flex flex-col font-sans transition-all duration-300">
+            <Navbar />
 
-          <main className="flex-1 w-full">
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/reserve" element={<ProtectedRoute><Reserve /></ProtectedRoute>} />
-              <Route path="/my-reservations" element={<ProtectedRoute><MyReservations /></ProtectedRoute>} />
-              <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </main>
-        </div>
-      </Router>
-    </AuthProvider>
+            <main className="flex-1 w-full">
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/reserve" element={<ProtectedRoute><Reserve /></ProtectedRoute>} />
+                <Route path="/my-reservations" element={<ProtectedRoute><MyReservations /></ProtectedRoute>} />
+                <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </main>
+          </div>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

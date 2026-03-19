@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { Edit2, Check, X, Home, MapPin, Trash2, Plus, AlertCircle, Search } from 'lucide-react';
+import { Edit2, Check, X, Home, MapPin, Trash2, Plus, AlertCircle, Search, RefreshCw } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface Cabin {
     id: string;
@@ -8,6 +9,7 @@ interface Cabin {
     capacity: number;
     status: string;
     location_id: string;
+    allowed_hierarchies: string[] | null;
 }
 
 interface Location {
@@ -17,14 +19,54 @@ interface Location {
 }
 
 export default function CabinsTab() {
+    const { user: currentUser } = useAuth();
+    const isSuperAdmin = currentUser?.role === 'super_admin';
     const [locations, setLocations] = useState<Location[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchType, setSearchType] = useState('todos');
+    const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+    const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+    const [minCapacity, setMinCapacity] = useState<number>(0);
     const [editingCabin, setEditingCabin] = useState<string | null>(null);
+
+    const handleLocationsToggle = (id: string) => {
+        setSelectedLocations(prev => 
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
+    };
+
+    const handleStatusesToggle = (s: string) => {
+        setSelectedStatuses(prev => 
+            prev.includes(s) ? prev.filter(item => item !== s) : [...prev, s]
+        );
+    };
+
+    const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        const allowedKeys = ['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete', 'Enter'];
+        if (!/[0-9]/.test(e.key) && !allowedKeys.includes(e.key)) {
+            e.preventDefault();
+        }
+    };
+
+    const statuses = [
+        { id: 'disponible', label: 'Disponible' },
+        { id: 'en mantenimiento', label: 'En Mantenimiento' },
+        { id: 'fuera de servicio', label: 'Fuera de Servicio' }
+    ];
     const [showAddModal, setShowAddModal] = useState(false);
     const [selectedLocForAdd, setSelectedLocForAdd] = useState<string>('');
-    const [editForm, setEditForm] = useState({ identifier: '', capacity: 4, status: 'disponible' });
+    const [editForm, setEditForm] = useState<{
+        identifier: string;
+        capacity: number;
+        status: string;
+        allowed_hierarchies: string[];
+    }>({ 
+        identifier: '', 
+        capacity: 4, 
+        status: 'disponible',
+        allowed_hierarchies: []
+    });
     const [error, setError] = useState('');
 
     const loadCabins = () => {
@@ -43,8 +85,9 @@ export default function CabinsTab() {
         setEditingCabin(cabin.id);
         setEditForm({
             identifier: cabin.identifier,
-            capacity: cabin.capacity,
-            status: cabin.status
+            capacity: cabin.capacity || 4,
+            status: cabin.status,
+            allowed_hierarchies: cabin.allowed_hierarchies || []
         });
     };
 
@@ -85,7 +128,12 @@ export default function CabinsTab() {
                 location_id: selectedLocForAdd
             });
             setShowAddModal(false);
-            setEditForm({ identifier: '', capacity: 4, status: 'disponible' });
+            setEditForm({ 
+                identifier: '', 
+                capacity: 4, 
+                status: 'disponible',
+                allowed_hierarchies: []
+            });
             setSelectedLocForAdd('');
             loadCabins();
         } catch (err: any) {
@@ -93,65 +141,159 @@ export default function CabinsTab() {
         }
     };
 
-    const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        const allowedKeys = ['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete', 'Enter'];
-        if (!/[0-9]/.test(e.key) && !allowedKeys.includes(e.key)) {
-            e.preventDefault();
-        }
-    };
-
     const filteredLocations = locations.map(loc => ({
         ...loc,
         cabins: loc.cabins.filter(c => {
             const term = searchTerm.toLowerCase();
-            if (!term) return true;
-
-            const identStr = c.identifier.toLowerCase();
-            const sedeStr = loc.name.toLowerCase();
-
-            switch (searchType) {
-                case 'identificador': return identStr.includes(term);
-                case 'sede': return sedeStr.includes(term);
-                default: return identStr.includes(term) || sedeStr.includes(term);
+            
+            // Filtro por tipo de buscador principal
+            if (searchType === 'todos' || searchType === 'identificador') {
+                if (term) {
+                    const identStr = c.identifier.toLowerCase();
+                    if (!identStr.includes(term)) return false;
+                }
             }
+
+            // Filtro especializado: Sede
+            if (searchType === 'sede' && selectedLocations.length > 0) {
+                if (!selectedLocations.includes(loc.id)) return false;
+            }
+
+            // Filtro especializado: Estado
+            if (searchType === 'estado' && selectedStatuses.length > 0) {
+                if (!selectedStatuses.includes(c.status)) return false;
+            }
+
+            // Filtro especializado: Capacidad
+            if (searchType === 'capacidad' && minCapacity > 0) {
+                if (c.capacity < minCapacity) return false;
+            }
+
+            return true;
         })
     })).filter(loc => loc.cabins.length > 0);
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <div className="flex flex-col md:flex-row gap-4 bg-white p-6 rounded institutional-card">
-                <div className="flex-1 flex flex-col md:flex-row gap-3">
-                    <select
-                        value={searchType}
-                        onChange={(e) => setSearchType(e.target.value)}
-                        className="border-2 border-slate-100 rounded focus:border-armada-navy px-4 py-3 font-bold text-xs uppercase text-slate-500 outline-none transition-all md:w-48 bg-slate-50/50"
-                    >
-                        <option value="todos">Todos los campos</option>
-                        <option value="identificador">Identificador</option>
-                        <option value="sede">Destino Naval</option>
-                    </select>
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="BUSCAR UNIDADES HABITACIONALES..."
-                            className="w-full pl-10 pr-4 py-3 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-xs uppercase tracking-widest"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+            {isSuperAdmin && (
+            <div className="bg-white p-6 rounded institutional-card shadow-sm border border-slate-100">
+                <div className="flex flex-col gap-6">
+                    <div className="flex flex-col md:flex-row gap-4 items-center">
+                        <div className="flex flex-col gap-1 md:w-64">
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Criterio de Búsqueda</label>
+                            <select
+                                value={searchType}
+                                onChange={(e) => setSearchType(e.target.value)}
+                                className="border-2 border-slate-100 rounded focus:border-armada-navy px-4 py-2.5 font-bold text-[11px] uppercase text-armada-navy outline-none transition-all w-full bg-slate-50/50"
+                            >
+                                <option value="todos">Todos los campos</option>
+                                <option value="identificador">Identificador</option>
+                                <option value="sede">Destino Naval</option>
+                                <option value="estado">Estado de Unidad</option>
+                                <option value="capacidad">Capacidad Mínima</option>
+                            </select>
+                        </div>
+
+                        {(searchType === 'todos' || searchType === 'identificador') && (
+                            <div className="flex-1 flex flex-col gap-1 w-full animate-fade-in">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Buscar Identificador</label>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                    <input
+                                        type="text"
+                                        placeholder="EJ: BAEN 6, SANTA TERESA 4..."
+                                        className="w-full pl-10 pr-4 py-2.5 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-black text-[11px] uppercase tracking-widest bg-white"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {searchType === 'capacidad' && (
+                            <div className="flex-1 flex flex-col gap-1 w-full animate-fade-in">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Capacidad Mínima de Ocupantes</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="EJ: 4"
+                                    className="w-full px-4 py-2.5 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-black text-[11px] bg-white"
+                                    value={minCapacity || ''}
+                                    onChange={(e) => setMinCapacity(parseInt(e.target.value) || 0)}
+                                />
+                            </div>
+                        )}
+
+                        <div className="flex gap-2 self-end">
+                            <button
+                                onClick={loadCabins}
+                                className="bg-armada-navy text-armada-gold px-6 py-3 rounded font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg border border-armada-gold/30 shrink-0 flex items-center gap-2"
+                            >
+                                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> ACTUALIZAR
+                            </button>
+                            {isSuperAdmin && (
+                                <button
+                                    onClick={() => {
+                                        setSelectedLocForAdd('');
+                                        setEditForm({
+                                            identifier: '',
+                                            capacity: 4,
+                                            status: 'disponible',
+                                            allowed_hierarchies: []
+                                        });
+                                        setShowAddModal(true);
+                                    }}
+                                    className="flex items-center justify-center gap-3 bg-white text-armada-navy px-6 py-3 rounded font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all shadow border-2 border-armada-navy/10 shrink-0"
+                                >
+                                    <Plus size={16} /> NUEVA UNIDAD
+                                </button>
+                            )}
+                        </div>
                     </div>
+
+                    {searchType === 'sede' && (
+                        <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded border border-slate-100 animate-fade-in-up">
+                            <div className="w-full mb-1">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Filtrar por Sedes:</span>
+                            </div>
+                            {locations.map(loc => (
+                                <button
+                                    key={loc.id}
+                                    onClick={() => handleLocationsToggle(loc.id)}
+                                    className={`px-3 py-1.5 rounded text-[10px] font-black transition-all border ${selectedLocations.includes(loc.id)
+                                        ? 'bg-armada-gold text-armada-navy border-armada-gold shadow-md scale-105'
+                                        : 'bg-white text-slate-400 border-slate-200 hover:border-armada-gold'
+                                        }`}
+                                >
+                                    {loc.name}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {searchType === 'estado' && (
+                        <div className="flex flex-wrap gap-3 p-4 bg-slate-50 rounded border border-slate-100 animate-fade-in-up">
+                            <div className="w-full mb-1">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Filtrar por Estado de Unidad:</span>
+                            </div>
+                            {statuses.map(s => (
+                                <button
+                                    key={s.id}
+                                    onClick={() => handleStatusesToggle(s.id)}
+                                    className={`px-4 py-2 rounded text-[10px] font-black transition-all border flex items-center gap-2 ${selectedStatuses.includes(s.id)
+                                        ? 'bg-armada-navy text-armada-gold border-armada-navy shadow-lg scale-105'
+                                        : 'bg-white text-slate-400 border-slate-200 hover:border-armada-navy'
+                                        }`}
+                                >
+                                    <div className={`w-2 h-2 rounded-full ${s.id === 'disponible' ? 'bg-green-500' : s.id === 'en mantenimiento' ? 'bg-yellow-500' : 'bg-red-500'}`} />
+                                    {s.label.toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
-                <button
-                    onClick={() => {
-                        setSelectedLocForAdd('');
-                        setEditForm({ identifier: '', capacity: 4, status: 'disponible' });
-                        setShowAddModal(true);
-                    }}
-                    className="flex items-center justify-center gap-3 bg-armada-navy text-armada-gold px-6 py-3 rounded font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg border border-armada-gold/30 shrink-0"
-                >
-                    <Plus size={18} /> AGREGAR UNIDAD
-                </button>
             </div>
+            )}
 
             {filteredLocations.map(loc => (
                 <div key={loc.id} className="institutional-card overflow-hidden">
@@ -207,6 +349,38 @@ export default function CabinsTab() {
                                                     <option value="fuera de servicio">Fuera de Servicio</option>
                                                 </select>
                                             </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-armada-navy uppercase tracking-widest italic block mb-3">Jerarquías Autorizadas</label>
+                                                <div className="flex flex-wrap gap-4 bg-slate-50 p-4 rounded border border-slate-100 shadow-inner">
+                                                    {[
+                                                        { id: 'ALM', label: 'Alm.' }, { id: 'CA', label: 'C.A.' }, { id: 'CN', label: 'C.N.' },
+                                                        { id: 'CF', label: 'C.F.' }, { id: 'CC', label: 'C.C.' }, { id: 'TN', label: 'T.N.' },
+                                                        { id: 'AN', label: 'A.N.' }, { id: 'AF', label: 'A.F.' }, { id: 'GM', label: 'G.M.' },
+                                                        { id: 'SOC', label: 'SOC' }, { id: 'SOP', label: 'SOP' }, { id: 'SOS', label: 'SOS' },
+                                                        { id: 'CP', label: 'C.P.' }, { id: 'CS', label: 'C.S.' }, { id: 'MP', label: 'M.P.' },
+                                                        { id: 'RET', label: 'RET' }
+                                                    ].map(h => (
+                                                        <label key={h.id} className="flex items-center gap-2 cursor-pointer group">
+                                                            <div className="relative flex items-center">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="peer appearance-none w-5 h-5 border-2 border-slate-300 rounded checked:bg-armada-navy checked:border-armada-navy transition-all"
+                                                                    checked={editForm.allowed_hierarchies.includes(h.id)}
+                                                                    onChange={(e) => {
+                                                                        const newH = e.target.checked
+                                                                            ? [...editForm.allowed_hierarchies, h.id]
+                                                                            : editForm.allowed_hierarchies.filter(x => x !== h.id);
+                                                                        setEditForm({ ...editForm, allowed_hierarchies: newH });
+                                                                    }}
+                                                                />
+                                                                <Check className="absolute w-3.5 h-3.5 text-armada-gold opacity-0 peer-checked:opacity-100 left-0.5 pointer-events-none transition-opacity" />
+                                                            </div>
+                                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter group-hover:text-armada-navy transition-colors">{h.label}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                                <p className="text-[8px] text-slate-400 italic mt-1">* Si no selecciona ninguna, todas están permitidas.</p>
+                                            </div>
                                             <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
                                                 <button onClick={cancelEditing} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded">
                                                     <X size={16} />
@@ -224,12 +398,16 @@ export default function CabinsTab() {
                                                     <span className="font-black text-armada-navy text-sm uppercase tracking-tighter">{cabin.identifier}</span>
                                                 </div>
                                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={() => startEditing(cabin)} className="p-1 text-slate-400 hover:text-armada-gold hover:bg-slate-50 rounded">
-                                                        <Edit2 size={12} />
-                                                    </button>
-                                                    <button onClick={() => handleDelete(cabin.id, cabin.identifier)} className="p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded">
-                                                        <Trash2 size={12} />
-                                                    </button>
+                                                    {isSuperAdmin && (
+                                                        <>
+                                                            <button onClick={() => startEditing(cabin)} className="p-1 text-slate-400 hover:text-armada-gold hover:bg-slate-50 rounded">
+                                                                <Edit2 size={12} />
+                                                            </button>
+                                                            <button onClick={() => handleDelete(cabin.id, cabin.identifier)} className="p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded">
+                                                                <Trash2 size={12} />
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="space-y-1">
@@ -242,6 +420,13 @@ export default function CabinsTab() {
                                                         {cabin.status}
                                                     </span>
                                                 </div>
+                                                {cabin.allowed_hierarchies && cabin.allowed_hierarchies.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                        {cabin.allowed_hierarchies.map(h => (
+                                                            <span key={h} className="bg-slate-100 text-slate-500 px-1 py-0.5 rounded-[2px] text-[7px] font-black">{h}</span>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         </>
                                     )}

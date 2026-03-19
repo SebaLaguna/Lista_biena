@@ -2,8 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import path from 'path';
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+console.log('DATABASE_URL loaded:', process.env.DATABASE_URL ? 'Yes (masked)' : 'No');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -31,6 +33,6 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'API is running' });
 });
 
-app.listen(PORT, () => {
+app.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
 });
