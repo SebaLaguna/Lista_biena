@@ -9,7 +9,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecreto_armada_2026';
 
 export const register = async (req: Request, res: Response) => {
     try {
-        const { nombre, apellido, cedula, legajo, jerarquia, correo, telefono, password } = req.body;
+        const { nombre, apellido, cedula, legajo, jerarquia, correo: rawCorreo, telefono, password } = req.body;
+        const correo = rawCorreo.toLowerCase();
 
         // Check if user exists
         const existingUser = await prisma.user.findFirst({
@@ -52,23 +53,27 @@ export const register = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
     try {
-        const { correo, password } = req.body;
+        const { correo: rawCorreo, password } = req.body;
+        const correo = rawCorreo.toLowerCase();
 
         const user = await prisma.user.findUnique({
             where: { correo }
         });
 
         if (!user) {
+            console.warn(`[Login Failed] Usuario no encontrado: ${correo}`);
             return res.status(401).json({ error: 'Credenciales inválidas.' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password_hash);
 
         if (!isMatch) {
+            console.warn(`[Login Failed] Contraseña incorrecta para: ${correo}`);
             return res.status(401).json({ error: 'Credenciales inválidas.' });
         }
 
         if (user.status === 'pendiente') {
+            console.warn(`[Login Failed] Usuario pendiente de aprobación: ${correo}`);
             return res.status(403).json({ error: 'Tu cuenta está pendiente de aprobación por parte de BIENA.' });
         }
 

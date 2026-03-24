@@ -61,7 +61,7 @@ async function main() {
     const jerarquias = ['ALM', 'CA', 'CN', 'CF', 'CC', 'TN', 'AN', 'AF', 'GM', 'SOC', 'SOP', 'SOS', 'CP', 'CS', 'MP', 'RET'];
     
     const getRandom = (arr: any[]) => arr[Math.floor(Math.random() * arr.length)];
-    const hashedPassword = await bcrypt.hash('password123', 10);
+    const hashedPassword = await bcrypt.hash('admin123', 10);
 
     // Core Admins
     await prisma.user.upsert({
