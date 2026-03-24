@@ -29,10 +29,11 @@ El registro inicial no habilita el acceso inmediato.
 4. Una vez aprobado, el usuario puede iniciar sesión.
 
 ### 2.3 Jerarquías Soportadas (Niveles Reales)
-El sistema utiliza el escalafón completo de la Armada Nacional:
-- **Oficiales Superiores:** ALM, CN, CF, CC.
-- **Oficiales Jefes y Subalternos:** TN, TF, AN, GM.
-- **Personal Subalterno:** SOA, SO, S1, S2, C1, C2, M1, M2.
+El sistema utiliza el escalafón oficial cargado en el motor de reglas:
+- **Oficiales Superiores:** ALM, CA, CN, CF, CC.
+- **Oficiales Jefes y Subalternos:** TN, AN, AF, GM.
+- **Personal Subalterno:** SOC, SOP, SOS, CP, CS, MP.
+- **Otros:** RET (Personal Retirado).
 
 ---
 
@@ -73,8 +74,9 @@ Cada cabaña o unidad puede tener configuradas **Jerarquías Permitidas**.
 
 ### 4.4 Temporadas Estivales
 BIENA define períodos específicos (verano, semana de turismo, etc.) como "Temporada Estival".
-- Las reservas que caigan dentro de estas fechas están sujetas a una **Política de Cancelación Restrictiva**.
-- La cancelación debe realizarse con al menos **10 días** de antelación. Fuera de estas fechas, rige la política estándar.
+- Las reservas que caigan dentro de estas fechas están sujetas a una **Política de Cancelación Estival**.
+- La cancelación en temporada estival debe realizarse con al menos **48 horas** de antelación. 
+- Fuera de estas fechas (Temporada Normal), la antelación mínima es de **96 horas**.
 
 ---
 
