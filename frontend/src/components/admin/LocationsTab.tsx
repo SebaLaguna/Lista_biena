@@ -83,7 +83,7 @@ export default function LocationsTab() {
                         <input
                             type="text"
                             placeholder="BUSCAR DESTINO NAVAL / SEDE..."
-                            className="w-full pl-10 pr-4 py-3 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-xs uppercase tracking-widest"
+                            className="w-full pl-10 pr-4 py-3 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-sm uppercase tracking-widest"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -94,7 +94,7 @@ export default function LocationsTab() {
                             setFormData({ name: '', description: '' });
                             setShowModal(true);
                         }}
-                        className="flex items-center justify-center gap-3 bg-armada-navy text-armada-gold px-6 py-3 rounded font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg border border-armada-gold/30 shrink-0"
+                        className="flex items-center justify-center gap-3 bg-armada-navy text-armada-gold px-6 py-3 rounded font-black text-sm uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg border border-armada-gold/30 shrink-0"
                     >
                         <Plus size={18} /> AGREGAR DESTINO
                     </button>
@@ -104,12 +104,12 @@ export default function LocationsTab() {
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                     <Loader2 className="animate-spin text-armada-navy" size={40} />
-                    <p className="font-black text-armada-navy text-xs uppercase tracking-[0.3em]">Cargando Inventario Territorial...</p>
+                    <p className="font-black text-armada-navy text-sm uppercase tracking-[0.3em]">Cargando Inventario Territorial...</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     {filteredLocations.map(loc => (
-                        <div key={loc.id} className="bg-white rounded institutional-card overflow-hidden group border-l-4 border-armada-navy">
+                        <div key={loc.id} className="bg-white rounded institutional-card group border-l-4 border-armada-navy">
                             <div className="p-6">
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="p-3 bg-slate-50 rounded">
@@ -123,22 +123,22 @@ export default function LocationsTab() {
                                                     setFormData({ name: loc.name, description: loc.description });
                                                     setShowModal(true);
                                                 }}
-                                                className="p-2 text-slate-400 hover:text-armada-navy transition-colors bg-slate-50 hover:bg-slate-100 rounded"
+                                                className="p-3 text-slate-400 hover:text-armada-navy transition-colors bg-slate-50 hover:bg-slate-100 rounded-lg"
                                             >
-                                                <Edit2 size={16} />
+                                                <Edit2 size={20} />
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(loc.id, loc.name)}
-                                                className="p-2 text-slate-400 hover:text-red-500 transition-colors bg-slate-50 hover:bg-red-50 rounded"
+                                                className="p-3 text-slate-400 hover:text-red-500 transition-colors bg-slate-50 hover:bg-red-50 rounded-lg"
                                             >
-                                                <Trash2 size={16} />
+                                                <Trash2 size={20} />
                                             </button>
                                         </div>
                                     )}
                                 </div>
-                                <h4 className="font-black text-armada-navy uppercase tracking-tighter text-lg mb-1">{loc.name}</h4>
-                                <p className="text-xs text-slate-500 font-bold mb-4 line-clamp-2">{loc.description}</p>
-                                <div className="pt-4 border-t border-slate-100 flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                <h4 className="font-black text-armada-navy uppercase tracking-tighter text-xl mb-1">{loc.name}</h4>
+                                <p className="text-sm text-slate-500 font-bold mb-4 line-clamp-2">{loc.description}</p>
+                                <div className="pt-4 border-t border-slate-100 flex justify-between items-center text-xs font-black uppercase tracking-widest text-slate-400">
                                     <span>CABANAS REGISTRADAS</span>
                                     <span className="bg-armada-navy text-armada-gold px-3 py-1 rounded-full">{loc._count?.cabins || 0}</span>
                                 </div>

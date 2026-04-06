@@ -109,8 +109,8 @@ export default function EstivalTab() {
         <div className="space-y-6 animate-fade-in">
             <div className="flex justify-between items-center bg-white p-6 rounded institutional-card">
                 <div>
-                    <h2 className="text-xl font-black text-armada-navy uppercase tracking-tighter">Temporadas Estivales</h2>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Configuración de períodos con política de cancelación especial (10 días)</p>
+                    <h2 className="text-2xl font-black text-armada-navy uppercase tracking-tighter">Temporadas Estivales</h2>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Configuración de períodos con política de cancelación especial (10 días)</p>
                 </div>
                 <button
                     onClick={() => {
@@ -122,7 +122,7 @@ export default function EstivalTab() {
                             setShowAddForm(true);
                         }
                     }}
-                    className="flex items-center justify-center gap-3 bg-armada-navy text-armada-gold px-6 py-3 rounded font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg border border-armada-gold/30"
+                    className="flex items-center justify-center gap-3 bg-armada-navy text-armada-gold px-6 py-3 rounded font-black text-sm uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg border border-armada-gold/30"
                 >
                     {showAddForm ? 'CANCELAR' : <><Plus size={18} /> AGREGAR PERÍODO</>}
                 </button>
@@ -132,30 +132,30 @@ export default function EstivalTab() {
                 <div className="bg-white p-6 rounded institutional-card border-l-4 border-armada-gold animate-fade-in-down">
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                         <div className="space-y-1">
-                            <label className="text-[9px] font-black text-armada-navy uppercase tracking-widest">Fecha Inicio</label>
+                            <label className="text-[10px] font-black text-armada-navy uppercase tracking-widest">Fecha Inicio</label>
                             <input
                                 required
                                 type="date"
-                                className="w-full px-3 py-2 border-2 border-slate-100 rounded outline-none focus:border-armada-navy font-bold text-xs"
+                                className="w-full px-3 py-2 border-2 border-slate-100 rounded outline-none focus:border-armada-navy font-bold text-sm"
                                 value={formData.start_date}
                                 onChange={e => setFormData({ ...formData, start_date: e.target.value })}
                             />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-[9px] font-black text-armada-navy uppercase tracking-widest">Fecha Fin</label>
+                            <label className="text-[10px] font-black text-armada-navy uppercase tracking-widest">Fecha Fin</label>
                             <input
                                 required
                                 type="date"
-                                className="w-full px-3 py-2 border-2 border-slate-100 rounded outline-none focus:border-armada-navy font-bold text-xs"
+                                className="w-full px-3 py-2 border-2 border-slate-100 rounded outline-none focus:border-armada-navy font-bold text-sm"
                                 value={formData.end_date}
                                 onChange={e => setFormData({ ...formData, end_date: e.target.value })}
                             />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-[9px] font-black text-armada-navy uppercase tracking-widest">Descripción</label>
+                            <label className="text-[10px] font-black text-armada-navy uppercase tracking-widest">Descripción</label>
                             <input
                                 type="text"
-                                className="w-full px-3 py-2 border-2 border-slate-100 rounded outline-none focus:border-armada-navy font-bold text-xs"
+                                className="w-full px-3 py-2 border-2 border-slate-100 rounded outline-none focus:border-armada-navy font-bold text-sm"
                                 placeholder="Ej: Temporada 2025"
                                 value={formData.description}
                                 onChange={e => setFormData({ ...formData, description: e.target.value })}
@@ -163,7 +163,7 @@ export default function EstivalTab() {
                         </div>
                         <button
                             type="submit"
-                            className="bg-armada-navy text-armada-gold px-4 py-3 rounded font-black text-[10px] uppercase tracking-widest hover:bg-armada-black transition-all shadow-lg border border-armada-gold/30 h-[40px] flex items-center justify-center"
+                            className="bg-armada-navy text-armada-gold px-4 py-3 rounded font-black text-xs uppercase tracking-widest hover:bg-armada-black transition-all shadow-lg border border-armada-gold/30 h-[40px] flex items-center justify-center"
                         >
                             {editingId ? 'ACTUALIZAR' : 'GUARDAR'}
                         </button>
@@ -201,7 +201,7 @@ export default function EstivalTab() {
                                     <input
                                         type="text"
                                         placeholder="EJ: VERANO 2025..."
-                                        className="w-full pl-10 pr-4 py-2.5 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-black text-[11px] uppercase tracking-widest bg-white"
+                                        className="w-full pl-10 pr-4 py-2.5 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-black text-xs uppercase tracking-widest bg-white"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
@@ -212,7 +212,7 @@ export default function EstivalTab() {
                         <div className="flex gap-2 self-end">
                             <button
                                 onClick={loadPeriods}
-                                className="bg-armada-navy text-armada-gold px-6 py-3 rounded font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg border border-armada-gold/30 shrink-0 flex items-center gap-2"
+                                className="bg-armada-navy text-armada-gold px-6 py-3 rounded font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg border border-armada-gold/30 shrink-0 flex items-center gap-2"
                             >
                                 <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> ACTUALIZAR
                             </button>
@@ -255,7 +255,7 @@ export default function EstivalTab() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredPeriods.map(p => (
                     <div key={p.id} className="institutional-card p-6 border-t-4 border-armada-navy hover:border-armada-gold transition-all group">
                         <div className="flex justify-between items-start mb-4">
@@ -271,13 +271,13 @@ export default function EstivalTab() {
                                 </button>
                             </div>
                         </div>
-                        <h4 className="font-black text-armada-navy uppercase text-sm tracking-tight mb-1">{p.description || 'Período Estival'}</h4>
+                        <h4 className="font-black text-armada-navy uppercase text-base tracking-tight mb-1">{p.description || 'Período Estival'}</h4>
                         <div className="space-y-1">
-                            <div className="flex justify-between text-[11px] font-bold text-slate-500 uppercase">
+                            <div className="flex justify-between text-xs font-bold text-slate-500 uppercase">
                                 <span>Desde:</span>
                                 <span>{formatDateSafe(p.start_date)}</span>
                             </div>
-                            <div className="flex justify-between text-[11px] font-bold text-slate-500 uppercase">
+                            <div className="flex justify-between text-xs font-bold text-slate-500 uppercase">
                                 <span>Hasta:</span>
                                 <span>{formatDateSafe(p.end_date)}</span>
                             </div>

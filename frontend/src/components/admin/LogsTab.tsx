@@ -114,7 +114,7 @@ export default function LogsTab() {
                             <select
                                 value={searchType}
                                 onChange={(e) => setSearchType(e.target.value)}
-                                className="border-2 border-slate-100 rounded focus:border-armada-navy px-4 py-2.5 font-bold text-[11px] uppercase text-armada-navy outline-none transition-all w-full bg-slate-50/50"
+                                className="border-2 border-slate-100 rounded focus:border-armada-navy px-4 py-2.5 font-bold text-xs uppercase text-armada-navy outline-none transition-all w-full bg-slate-50/50"
                             >
                                 <option value="todos">Todos los registros</option>
                                 <option value="operador">Operador (Nombre/Legajo)</option>
@@ -132,7 +132,7 @@ export default function LogsTab() {
                                     <input
                                         type="text"
                                         placeholder="EJ: PÉREZ, 1234567..."
-                                        className="w-full pl-10 pr-4 py-2.5 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-black text-[11px] uppercase tracking-widest bg-white"
+                                        className="w-full pl-10 pr-4 py-2.5 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-black text-xs uppercase tracking-widest bg-white"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
@@ -186,7 +186,7 @@ export default function LogsTab() {
                                         setSelectedActions([]);
                                         setSelectedEntities([]);
                                     }}
-                                    className="px-4 py-3 rounded font-black text-[9px] uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors"
+                                    className="px-4 py-3 rounded font-black text-[10px] uppercase tracking-widest text-red-500 hover:bg-red-50 transition-colors"
                                 >
                                     Limpiar
                                 </button>
@@ -237,11 +237,19 @@ export default function LogsTab() {
             </div>
 
             <div className="institutional-card overflow-hidden">
-                <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center gap-3">
-                    <Activity size={20} className="text-armada-gold" />
-                    <div>
-                        <h3 className="text-sm font-black text-armada-navy uppercase tracking-widest">Auditoría del Sistema</h3>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Acceso Exclusivo Super Administrador</p>
+                <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        <Activity size={20} className="text-armada-gold" />
+                        <div>
+                            <h3 className="text-sm font-black text-armada-navy uppercase tracking-widest">Auditoría del Sistema</h3>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Acceso Exclusivo Super Administrador</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Registros:</span>
+                        <span className="bg-armada-navy text-armada-gold px-2 py-0.5 rounded text-xs font-black border border-armada-gold/20 shadow-sm">
+                            {filteredLogs.length} / {logs.length}
+                        </span>
                     </div>
                 </div>
                 <div className="overflow-x-auto">
@@ -257,8 +265,8 @@ export default function LogsTab() {
                         <tbody className="bg-white divide-y divide-slate-100">
                             {filteredLogs.map(log => (
                                 <tr key={log.id} className="hover:bg-slate-50 transition-colors">
-                                    <td className="px-5 py-4 whitespace-nowrap text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
-                                        <Clock size={12} className="text-slate-400" />
+                                    <td className="px-5 py-4 whitespace-nowrap text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                                        <Clock size={14} className="text-slate-400" />
                                         {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", { locale: es })}
                                     </td>
                                     <td className="px-5 py-4 whitespace-nowrap">
@@ -268,14 +276,14 @@ export default function LogsTab() {
                                     <td className="px-5 py-4 text-xs font-bold text-slate-700 uppercase">
                                         {log.action}
                                     </td>
-                                    <td className="px-5 py-4 whitespace-nowrap text-[10px] text-slate-500 uppercase font-bold">
-                                        <span className="bg-slate-100 px-2 py-0.5 rounded">{log.entity_type} <span className="opacity-50">#{log.entity_id}</span></span>
+                                    <td className="px-5 py-4 whitespace-nowrap text-xs text-slate-500 uppercase font-bold">
+                                        <span className="bg-slate-100 px-2 py-1 rounded">{log.entity_type} <span className="opacity-50">#{log.entity_id}</span></span>
                                     </td>
                                 </tr>
                             ))}
                             {filteredLogs.length === 0 && !loading && (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-12 text-center text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                                    <td colSpan={4} className="px-6 py-12 text-center text-slate-400 text-xs font-black uppercase tracking-[0.2em]">
                                         No hay registros en el historial.
                                     </td>
                                 </tr>

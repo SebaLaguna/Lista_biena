@@ -84,7 +84,7 @@ export default function AdminPanel() {
             <div className="flex flex-wrap gap-2 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
                 <button
                     onClick={() => setActiveTab('reservations')}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-t-lg font-black text-[10px] uppercase tracking-widest transition-all relative ${activeTab === 'reservations' ? 'bg-armada-navy text-armada-gold shadow-lg transform -translate-y-1' : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                    className={`flex items-center gap-2 px-4 py-3 rounded-t-lg font-black text-xs uppercase tracking-widest transition-all relative ${activeTab === 'reservations' ? 'bg-armada-navy text-armada-gold shadow-lg transform -translate-y-1' : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
                         }`}
                 >
                     <LayoutList size={16} /> Solicitudes
@@ -96,7 +96,7 @@ export default function AdminPanel() {
                 </button>
                 <button
                     onClick={() => setActiveTab('users')}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-t-lg font-black text-[10px] uppercase tracking-widest transition-all relative ${activeTab === 'users' ? 'bg-armada-navy text-armada-gold shadow-lg transform -translate-y-1' : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                    className={`flex items-center gap-2 px-4 py-3 rounded-t-lg font-black text-xs uppercase tracking-widest transition-all relative ${activeTab === 'users' ? 'bg-armada-navy text-armada-gold shadow-lg transform -translate-y-1' : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
                         }`}
                 >
                     <Users size={16} /> Usuarios
@@ -139,7 +139,7 @@ export default function AdminPanel() {
                 {isSuperAdmin && (
                     <button
                         onClick={() => setActiveTab('logs')}
-                        className={`flex items-center gap-2 px-4 py-3 rounded-t-lg font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'logs' ? 'bg-armada-navy text-armada-gold shadow-lg transform -translate-y-1' : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                        className={`flex items-center gap-2 px-4 py-3 rounded-t-lg font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'logs' ? 'bg-armada-navy text-armada-gold shadow-lg transform -translate-y-1' : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
                             }`}
                     >
                         <Activity size={16} /> Auditoría

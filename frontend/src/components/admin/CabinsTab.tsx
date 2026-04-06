@@ -20,7 +20,7 @@ interface Location {
 
 export default function CabinsTab() {
     const { user: currentUser } = useAuth();
-    const isSuperAdmin = currentUser?.role === 'super_admin';
+    const isSuperAdmin = currentUser?.role === 'super_admin' || currentUser?.role === 'admin_biena';
     const [locations, setLocations] = useState<Location[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -175,16 +175,15 @@ export default function CabinsTab() {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            {isSuperAdmin && (
             <div className="bg-white p-6 rounded institutional-card shadow-sm border border-slate-100">
                 <div className="flex flex-col gap-6">
                     <div className="flex flex-col md:flex-row gap-4 items-center">
                         <div className="flex flex-col gap-1 md:w-64">
-                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Criterio de Búsqueda</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Criterio de Búsqueda</label>
                             <select
                                 value={searchType}
                                 onChange={(e) => setSearchType(e.target.value)}
-                                className="border-2 border-slate-100 rounded focus:border-armada-navy px-4 py-2.5 font-bold text-[11px] uppercase text-armada-navy outline-none transition-all w-full bg-slate-50/50"
+                                className="border-2 border-slate-100 rounded focus:border-armada-navy px-4 py-2.5 font-bold text-xs uppercase text-armada-navy outline-none transition-all w-full bg-slate-50/50"
                             >
                                 <option value="todos">Todos los campos</option>
                                 <option value="identificador">Identificador</option>
@@ -196,13 +195,13 @@ export default function CabinsTab() {
 
                         {(searchType === 'todos' || searchType === 'identificador') && (
                             <div className="flex-1 flex flex-col gap-1 w-full animate-fade-in">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Buscar Identificador</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Buscar Identificador</label>
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                     <input
                                         type="text"
                                         placeholder="EJ: BAEN 6, SANTA TERESA 4..."
-                                        className="w-full pl-10 pr-4 py-2.5 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-black text-[11px] uppercase tracking-widest bg-white"
+                                        className="w-full pl-10 pr-4 py-2.5 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-black text-xs uppercase tracking-widest bg-white"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
@@ -212,12 +211,12 @@ export default function CabinsTab() {
 
                         {searchType === 'capacidad' && (
                             <div className="flex-1 flex flex-col gap-1 w-full animate-fade-in">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Capacidad Mínima de Ocupantes</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Capacidad Mínima de Ocupantes</label>
                                 <input
                                     type="number"
                                     min="0"
                                     placeholder="EJ: 4"
-                                    className="w-full px-4 py-2.5 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-black text-[11px] bg-white"
+                                    className="w-full px-4 py-2.5 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-black text-xs bg-white"
                                     value={minCapacity || ''}
                                     onChange={(e) => setMinCapacity(parseInt(e.target.value) || 0)}
                                 />
@@ -227,7 +226,7 @@ export default function CabinsTab() {
                         <div className="flex gap-2 self-end">
                             <button
                                 onClick={loadCabins}
-                                className="bg-armada-navy text-armada-gold px-6 py-3 rounded font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg border border-armada-gold/30 shrink-0 flex items-center gap-2"
+                                className="bg-armada-navy text-armada-gold px-6 py-3 rounded font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg border border-armada-gold/30 shrink-0 flex items-center gap-2"
                             >
                                 <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> ACTUALIZAR
                             </button>
@@ -243,7 +242,7 @@ export default function CabinsTab() {
                                         });
                                         setShowAddModal(true);
                                     }}
-                                    className="flex items-center justify-center gap-3 bg-white text-armada-navy px-6 py-3 rounded font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all shadow border-2 border-armada-navy/10 shrink-0"
+                                    className="flex items-center justify-center gap-3 bg-white text-armada-navy px-6 py-3 rounded font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow border-2 border-armada-navy/10 shrink-0"
                                 >
                                     <Plus size={16} /> NUEVA UNIDAD
                                 </button>
@@ -254,13 +253,13 @@ export default function CabinsTab() {
                     {searchType === 'sede' && (
                         <div className="flex flex-wrap gap-2 p-4 bg-slate-50 rounded border border-slate-100 animate-fade-in-up">
                             <div className="w-full mb-1">
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Filtrar por Sedes:</span>
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Filtrar por Sedes:</span>
                             </div>
                             {locations.map(loc => (
                                 <button
                                     key={loc.id}
                                     onClick={() => handleLocationsToggle(loc.id)}
-                                    className={`px-3 py-1.5 rounded text-[10px] font-black transition-all border ${selectedLocations.includes(loc.id)
+                                    className={`px-3 py-1.5 rounded text-xs font-black transition-all border ${selectedLocations.includes(loc.id)
                                         ? 'bg-armada-gold text-armada-navy border-armada-gold shadow-md scale-105'
                                         : 'bg-white text-slate-400 border-slate-200 hover:border-armada-gold'
                                         }`}
@@ -274,13 +273,13 @@ export default function CabinsTab() {
                     {searchType === 'estado' && (
                         <div className="flex flex-wrap gap-3 p-4 bg-slate-50 rounded border border-slate-100 animate-fade-in-up">
                             <div className="w-full mb-1">
-                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Filtrar por Estado de Unidad:</span>
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Filtrar por Estado de Unidad:</span>
                             </div>
                             {statuses.map(s => (
                                 <button
                                     key={s.id}
                                     onClick={() => handleStatusesToggle(s.id)}
-                                    className={`px-4 py-2 rounded text-[10px] font-black transition-all border flex items-center gap-2 ${selectedStatuses.includes(s.id)
+                                    className={`px-4 py-2 rounded text-xs font-black transition-all border flex items-center gap-2 ${selectedStatuses.includes(s.id)
                                         ? 'bg-armada-navy text-armada-gold border-armada-navy shadow-lg scale-105'
                                         : 'bg-white text-slate-400 border-slate-200 hover:border-armada-navy'
                                         }`}
@@ -293,7 +292,6 @@ export default function CabinsTab() {
                     )}
                 </div>
             </div>
-            )}
 
             {filteredLocations.map(loc => (
                 <div key={loc.id} className="institutional-card overflow-hidden">
@@ -306,7 +304,7 @@ export default function CabinsTab() {
                             {loc.cabins.length} UNIDADES
                         </span>
                     </div>
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                         {loc.cabins
                             .sort((a, b) => a.identifier.localeCompare(b.identifier, undefined, { numeric: true, sensitivity: 'base' }))
                             .map(cabin => (
@@ -323,7 +321,7 @@ export default function CabinsTab() {
                                                     type="text"
                                                     value={editForm.identifier}
                                                     onChange={e => setEditForm({ ...editForm, identifier: e.target.value })}
-                                                    className="w-full border border-slate-300 rounded px-2 py-1 text-xs font-bold"
+                                                    className="w-full border border-slate-300 rounded px-2 py-1 text-sm font-bold"
                                                 />
                                             </div>
                                             <div>
@@ -331,10 +329,13 @@ export default function CabinsTab() {
                                                 <input
                                                     type="number"
                                                     min="1"
-                                                    value={editForm.capacity}
+                                                    value={editForm.capacity === 0 ? '' : editForm.capacity}
                                                     onKeyDown={handleNumericKeyDown}
-                                                    onChange={e => setEditForm({ ...editForm, capacity: parseInt(e.target.value) || 1 })}
-                                                    className="w-full border border-slate-300 rounded px-2 py-1 text-xs font-bold"
+                                                    onChange={e => {
+                                                        const val = parseInt(e.target.value);
+                                                        setEditForm({ ...editForm, capacity: isNaN(val) ? 0 : val });
+                                                    }}
+                                                    className="w-full border border-slate-300 rounded px-2 py-1 text-sm font-bold"
                                                 />
                                             </div>
                                             <div>
@@ -342,7 +343,7 @@ export default function CabinsTab() {
                                                 <select
                                                     value={editForm.status}
                                                     onChange={e => setEditForm({ ...editForm, status: e.target.value })}
-                                                    className="w-full border border-slate-300 rounded px-2 py-1 text-xs font-bold uppercase"
+                                                    className="w-full border border-slate-300 rounded px-2 py-1 text-sm font-bold uppercase"
                                                 >
                                                     <option value="disponible">Disponible</option>
                                                     <option value="en mantenimiento">En Mantenimiento</option>
@@ -375,18 +376,18 @@ export default function CabinsTab() {
                                                                 />
                                                                 <Check className="absolute w-3.5 h-3.5 text-armada-gold opacity-0 peer-checked:opacity-100 left-0.5 pointer-events-none transition-opacity" />
                                                             </div>
-                                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter group-hover:text-armada-navy transition-colors">{h.label}</span>
+                                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter group-hover:text-armada-navy transition-colors">{h.label}</span>
                                                         </label>
                                                     ))}
                                                 </div>
                                                 <p className="text-[8px] text-slate-400 italic mt-1">* Si no selecciona ninguna, todas están permitidas.</p>
                                             </div>
                                             <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
-                                                <button onClick={cancelEditing} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded">
-                                                    <X size={16} />
+                                                <button onClick={cancelEditing} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors">
+                                                    <X size={20} />
                                                 </button>
-                                                <button onClick={() => saveCabin(cabin.id)} className="p-1.5 text-white bg-armada-navy hover:bg-slate-800 rounded shadow-sm border border-armada-gold/30">
-                                                    <Check size={16} className="text-armada-gold" />
+                                                <button onClick={() => saveCabin(cabin.id)} className="p-2 text-white bg-armada-navy hover:bg-slate-800 rounded-lg shadow-md border border-armada-gold/30 transition-all active:scale-95">
+                                                    <Check size={20} className="text-armada-gold" />
                                                 </button>
                                             </div>
                                         </div>
@@ -400,19 +401,19 @@ export default function CabinsTab() {
                                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     {isSuperAdmin && (
                                                         <>
-                                                            <button onClick={() => startEditing(cabin)} className="p-1 text-slate-400 hover:text-armada-gold hover:bg-slate-50 rounded">
-                                                                <Edit2 size={12} />
+                                                            <button onClick={() => startEditing(cabin)} className="p-1.5 text-slate-400 hover:text-armada-gold hover:bg-slate-50 rounded">
+                                                                <Edit2 size={16} />
                                                             </button>
-                                                            <button onClick={() => handleDelete(cabin.id, cabin.identifier)} className="p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded">
-                                                                <Trash2 size={12} />
+                                                            <button onClick={() => handleDelete(cabin.id, cabin.identifier)} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded">
+                                                                <Trash2 size={16} />
                                                             </button>
                                                         </>
                                                     )}
                                                 </div>
                                             </div>
                                             <div className="space-y-1">
-                                                <div className="text-[10px] font-bold text-slate-400 uppercase">Capacidad: <span className="text-armada-navy font-black">{cabin.capacity}</span></div>
-                                                <div className="text-[9px] font-black uppercase flex items-center gap-1.5">
+                                                <div className="text-[11px] font-bold text-slate-400 uppercase">Capacidad: <span className="text-armada-navy font-black">{cabin.capacity}</span></div>
+                                                <div className="text-xs font-black uppercase flex items-center gap-1.5">
                                                     <span className={`px-2 py-0.5 rounded-sm tracking-widest ${cabin.status === 'disponible' ? 'bg-green-100 text-green-700' :
                                                         cabin.status === 'en mantenimiento' ? 'bg-yellow-100 text-yellow-700' :
                                                             'bg-red-100 text-red-700'
@@ -423,7 +424,7 @@ export default function CabinsTab() {
                                                 {cabin.allowed_hierarchies && cabin.allowed_hierarchies.length > 0 && (
                                                     <div className="flex flex-wrap gap-1 mt-1">
                                                         {cabin.allowed_hierarchies.map(h => (
-                                                            <span key={h} className="bg-slate-100 text-slate-500 px-1 py-0.5 rounded-[2px] text-[7px] font-black">{h}</span>
+                                                            <span key={h} className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-[2px] text-[9px] font-black">{h}</span>
                                                         ))}
                                                     </div>
                                                 )}
@@ -489,8 +490,11 @@ export default function CabinsTab() {
                                         min="1"
                                         onKeyDown={handleNumericKeyDown}
                                         className="w-full px-3 py-2 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-sm bg-slate-50/50"
-                                        value={editForm.capacity}
-                                        onChange={(e) => setEditForm({ ...editForm, capacity: parseInt(e.target.value) || 1 })}
+                                        value={editForm.capacity === 0 ? '' : editForm.capacity}
+                                        onChange={(e) => {
+                                            const val = parseInt(e.target.value);
+                                            setEditForm({ ...editForm, capacity: isNaN(val) ? 0 : val });
+                                        }}
                                     />
                                 </div>
                                 <div className="space-y-1">

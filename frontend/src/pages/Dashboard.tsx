@@ -33,29 +33,33 @@ export default function Dashboard() {
             </header>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-10">
-                <Link to="/reserve" className="group institutional-card hover:translate-y-[-4px] transition-all p-6 md:p-8 flex flex-col h-full hover:border-armada-navy animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-                    <div className="bg-slate-50 w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-armada-navy group-hover:bg-armada-navy group-hover:text-white transition-all mb-6 border border-slate-100 group-hover:border-armada-gold">
-                        <CompassLogo size={32} bgColor="white" />
-                    </div>
-                    <h3 className="text-lg md:text-xl font-black text-armada-navy uppercase tracking-tight mb-2">Solicitud de Reserva</h3>
-                    <p className="text-slate-500 text-xs md:text-sm leading-relaxed mb-6">Inicie una nueva solicitud para viviendas vacacionales en las sedes de la Armada Nacional.</p>
-                    <div className="mt-auto flex items-center text-armada-gold font-bold text-[10px] md:text-xs uppercase tracking-widest gap-2">
-                        <span>Acceder Ahora</span>
-                        <div className="h-[2px] w-6 md:w-8 bg-armada-gold" />
-                    </div>
-                </Link>
+                {user.role !== 'admin_biena' && (
+                    <>
+                        <Link to="/reserve" className="group institutional-card hover:translate-y-[-4px] transition-all p-6 md:p-8 flex flex-col h-full hover:border-armada-navy animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+                            <div className="bg-slate-50 w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-armada-navy group-hover:bg-armada-navy group-hover:text-white transition-all mb-6 border border-slate-100 group-hover:border-armada-gold">
+                                <CompassLogo size={32} bgColor="white" />
+                            </div>
+                            <h3 className="text-lg md:text-xl font-black text-armada-navy uppercase tracking-tight mb-2">Solicitud de Reserva</h3>
+                            <p className="text-slate-500 text-xs md:text-sm leading-relaxed mb-6">Inicie una nueva solicitud para viviendas vacacionales en las sedes de la Armada Nacional.</p>
+                            <div className="mt-auto flex items-center text-armada-gold font-bold text-[10px] md:text-xs uppercase tracking-widest gap-2">
+                                <span>Acceder Ahora</span>
+                                <div className="h-[2px] w-6 md:w-8 bg-armada-gold" />
+                            </div>
+                        </Link>
 
-                <Link to="/my-reservations" className="group institutional-card hover:translate-y-[-4px] transition-all p-6 md:p-8 flex flex-col h-full hover:border-armada-navy animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-                    <div className="bg-slate-50 w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-armada-navy group-hover:bg-armada-navy group-hover:text-white transition-all mb-6 border border-slate-100 group-hover:border-armada-gold">
-                        <LayoutDashboard size={28} className="md:size-[32px]" />
-                    </div>
-                    <h3 className="text-lg md:text-xl font-black text-armada-navy uppercase tracking-tight mb-2">Historial y Estado</h3>
-                    <p className="text-slate-500 text-xs md:text-sm leading-relaxed mb-6">Consulte el estado de sus reservas vigentes y revise el historial de sus estancias anteriores.</p>
-                    <div className="mt-auto flex items-center text-armada-gold font-bold text-[10px] md:text-xs uppercase tracking-widest gap-2">
-                        <span>Consultar</span>
-                        <div className="h-[2px] w-6 md:w-8 bg-armada-gold" />
-                    </div>
-                </Link>
+                        <Link to="/my-reservations" className="group institutional-card hover:translate-y-[-4px] transition-all p-6 md:p-8 flex flex-col h-full hover:border-armada-navy animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+                            <div className="bg-slate-50 w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-armada-navy group-hover:bg-armada-navy group-hover:text-white transition-all mb-6 border border-slate-100 group-hover:border-armada-gold">
+                                <LayoutDashboard size={28} className="md:size-[32px]" />
+                            </div>
+                            <h3 className="text-lg md:text-xl font-black text-armada-navy uppercase tracking-tight mb-2">Historial y Estado</h3>
+                            <p className="text-slate-500 text-xs md:text-sm leading-relaxed mb-6">Consulte el estado de sus reservas vigentes y revise el historial de sus estancias anteriores.</p>
+                            <div className="mt-auto flex items-center text-armada-gold font-bold text-[10px] md:text-xs uppercase tracking-widest gap-2">
+                                <span>Consultar</span>
+                                <div className="h-[2px] w-6 md:w-8 bg-armada-gold" />
+                            </div>
+                        </Link>
+                    </>
+                )}
 
                 {isAdmin && (
                     <Link to="/admin" className="group institutional-card hover:translate-y-[-4px] transition-all p-6 md:p-8 flex flex-col h-full border-t-armada-navy/20 hover:border-armada-navy bg-armada-navy/5 animate-fade-in-up" style={{ animationDelay: '400ms' }}>

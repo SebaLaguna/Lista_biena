@@ -22,10 +22,11 @@ export default function Navbar() {
     const isSuperAdmin = user.role === 'super_admin';
     const isAdmin = user.role === 'super_admin' || user.role === 'admin_biena';
 
-    const navLinks = [
-        { to: "/reserve", icon: <CompassLogo size={18} bgColor="transparent" />, label: "NUEVA RESERVA" },
-        { to: "/my-reservations", icon: <LayoutDashboard size={18} />, label: "MIS RESERVAS" },
-    ];
+    const navLinks = [];
+    if (user.role !== 'admin_biena') {
+        navLinks.push({ to: "/reserve", icon: <CompassLogo size={18} bgColor="transparent" />, label: "NUEVA RESERVA" });
+        navLinks.push({ to: "/my-reservations", icon: <LayoutDashboard size={18} />, label: "MIS RESERVAS" });
+    }
 
     if (isAdmin) {
         navLinks.push({ to: "/admin", icon: <ShieldCheck size={18} />, label: "PANEL ADMINISTRATIVO" });

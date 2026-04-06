@@ -11,10 +11,11 @@ import Terms from './pages/Terms';
 import NotFound from './pages/NotFound';
 import ErrorBoundary from './components/ErrorBoundary';
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children, allowAdminBiena = true }: { children: React.ReactNode, allowAdminBiena?: boolean }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="p-8 text-center text-gray-500 font-bold uppercase tracking-widest animate-pulse">Procesando Identidad Militar...</div>;
   if (!user) return <Navigate to="/login" replace />;
+  if (!allowAdminBiena && user.role === 'admin_biena') return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
@@ -31,8 +32,8 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/reserve" element={<ProtectedRoute><Reserve /></ProtectedRoute>} />
-                <Route path="/my-reservations" element={<ProtectedRoute><MyReservations /></ProtectedRoute>} />
+                <Route path="/reserve" element={<ProtectedRoute allowAdminBiena={false}><Reserve /></ProtectedRoute>} />
+                <Route path="/my-reservations" element={<ProtectedRoute allowAdminBiena={false}><MyReservations /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />

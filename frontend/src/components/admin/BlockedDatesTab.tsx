@@ -119,11 +119,11 @@ export default function BlockedDatesTab() {
                 </h3>
                 <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                     <div className="lg:col-span-1">
-                        <label className="block text-[9px] font-black uppercase text-slate-400 mb-1">Unidad (Opcional)</label>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Unidad (Opcional)</label>
                         <select
                             value={newBlock.cabin_id}
                             onChange={e => setNewBlock({ ...newBlock, cabin_id: e.target.value })}
-                            className="w-full border-2 border-slate-100 rounded px-3 py-2 text-xs font-bold uppercase overflow-hidden text-ellipsis focus:border-armada-navy transition-all bg-slate-50/50"
+                            className="w-full border-2 border-slate-100 rounded px-3 py-2 text-sm font-bold uppercase overflow-hidden text-ellipsis focus:border-armada-navy transition-all bg-slate-50/50"
                         >
                             <option value="">Todas (Bloqueo Global)</option>
                             {locations.map(loc => (
@@ -136,34 +136,34 @@ export default function BlockedDatesTab() {
                         </select>
                     </div>
                     <div className="lg:col-span-1">
-                        <label className="block text-[9px] font-black uppercase text-slate-400 mb-1">Desde</label>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Desde</label>
                         <input
                             type="date"
                             required
                             value={newBlock.start_date}
                             onChange={e => setNewBlock({ ...newBlock, start_date: e.target.value })}
-                            className="w-full border-2 border-slate-100 rounded px-3 py-2 text-xs font-bold focus:border-armada-navy transition-all bg-slate-50/50"
+                            className="w-full border-2 border-slate-100 rounded px-3 py-2 text-sm font-bold focus:border-armada-navy transition-all bg-slate-50/50"
                         />
                     </div>
                     <div className="lg:col-span-1">
-                        <label className="block text-[9px] font-black uppercase text-slate-400 mb-1">Hasta</label>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Hasta</label>
                         <input
                             type="date"
                             required
                             value={newBlock.end_date}
                             onChange={e => setNewBlock({ ...newBlock, end_date: e.target.value })}
-                            className="w-full border-2 border-slate-100 rounded px-3 py-2 text-xs font-bold focus:border-armada-navy transition-all bg-slate-50/50"
+                            className="w-full border-2 border-slate-100 rounded px-3 py-2 text-sm font-bold focus:border-armada-navy transition-all bg-slate-50/50"
                         />
                     </div>
                     <div className="lg:col-span-1">
-                        <label className="block text-[9px] font-black uppercase text-slate-400 mb-1">Motivo / Orden</label>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 mb-1">Motivo / Orden</label>
                         <input
                             type="text"
                             required
                             placeholder="Ej. Mantenimiento Anual"
                             value={newBlock.reason}
                             onChange={e => setNewBlock({ ...newBlock, reason: e.target.value })}
-                            className="w-full border-2 border-slate-100 rounded px-3 py-2 text-xs font-bold focus:border-armada-navy transition-all bg-slate-50/50"
+                            className="w-full border-2 border-slate-100 rounded px-3 py-2 text-sm font-bold focus:border-armada-navy transition-all bg-slate-50/50"
                         />
                     </div>
                     <div className="lg:col-span-1">
@@ -178,11 +178,11 @@ export default function BlockedDatesTab() {
                 <div className="flex flex-col gap-6">
                     <div className="flex flex-col md:flex-row gap-4 items-center">
                         <div className="flex flex-col gap-1 md:w-64">
-                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Criterio de Búsqueda de Bloqueos</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Criterio de Búsqueda de Bloqueos</label>
                             <select
                                 value={searchType}
                                 onChange={(e) => setSearchType(e.target.value)}
-                                className="border-2 border-slate-100 rounded focus:border-armada-navy px-4 py-2.5 font-bold text-[11px] uppercase text-armada-navy outline-none transition-all w-full bg-slate-50/50"
+                                className="border-2 border-slate-100 rounded focus:border-armada-navy px-4 py-2.5 font-bold text-xs uppercase text-armada-navy outline-none transition-all w-full bg-slate-50/50"
                             >
                                 <option value="todos">Todos los registros</option>
                                 <option value="sede">Sede / Destino</option>
@@ -195,19 +195,19 @@ export default function BlockedDatesTab() {
                         {searchType === 'fecha' && (
                             <div className="flex-1 flex flex-col md:flex-row gap-4 w-full animate-fade-in">
                                 <div className="flex-1 flex flex-col gap-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Desde</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Desde</label>
                                     <input
                                         type="date"
-                                        className="w-full px-4 py-2 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-[11px]"
+                                        className="w-full px-4 py-2 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-xs"
                                         value={filterStartDate}
                                         onChange={(e) => setFilterStartDate(e.target.value)}
                                     />
                                 </div>
                                 <div className="flex-1 flex flex-col gap-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Hasta</label>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Hasta</label>
                                     <input
                                         type="date"
-                                        className="w-full px-4 py-2 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-[11px]"
+                                        className="w-full px-4 py-2 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-xs"
                                         value={filterEndDate}
                                         onChange={(e) => setFilterEndDate(e.target.value)}
                                     />
@@ -218,7 +218,7 @@ export default function BlockedDatesTab() {
                         <div className="flex gap-2 self-end">
                             <button
                                 onClick={loadData}
-                                className="bg-armada-navy text-armada-gold px-6 py-3 rounded font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg border border-armada-gold/30 shrink-0 flex items-center gap-2"
+                                className="bg-armada-navy text-armada-gold px-6 py-3 rounded font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg border border-armada-gold/30 shrink-0 flex items-center gap-2"
                             >
                                 <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> ACTUALIZAR LISTA
                             </button>
@@ -299,10 +299,10 @@ export default function BlockedDatesTab() {
                     <table className="min-w-full divide-y divide-slate-200">
                         <thead className="bg-slate-50">
                             <tr>
-                                <th className="px-5 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Alcance del Bloqueo</th>
-                                <th className="px-5 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Período de Vigencia</th>
-                                <th className="px-5 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Observación / Causa</th>
-                                <th className="px-5 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Gestión</th>
+                                <th className="px-5 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Alcance del Bloqueo</th>
+                                <th className="px-5 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Período de Vigencia</th>
+                                <th className="px-5 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Observación / Causa</th>
+                                <th className="px-5 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Gestión</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-100">
@@ -311,11 +311,11 @@ export default function BlockedDatesTab() {
                                     <td className="px-5 py-4">
                                         {b.cabin ? (
                                             <div className="flex flex-col">
-                                                <div className="text-xs font-black text-armada-navy uppercase flex items-center gap-2">
+                                                <div className="text-sm font-black text-armada-navy uppercase flex items-center gap-2">
                                                     <Home size={14} className="text-slate-400" />
                                                     {b.cabin.identifier}
                                                 </div>
-                                                <div className="text-[9px] text-slate-400 font-bold uppercase flex items-center gap-1 mt-1">
+                                                <div className="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1 mt-1">
                                                     <MapPin size={10} /> {b.cabin.location?.name || 'Sede N/A'}
                                                 </div>
                                             </div>
@@ -326,7 +326,7 @@ export default function BlockedDatesTab() {
                                         )}
                                     </td>
                                     <td className="px-5 py-4">
-                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-600">
+                                        <div className="flex items-center gap-2 text-xs font-black uppercase text-slate-600">
                                             <Calendar size={14} className="text-armada-gold" />
                                             {safeFormat(b.start_date)} <span className="text-slate-300 mx-1">—</span> {safeFormat(b.end_date)}
                                         </div>

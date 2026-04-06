@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { Shield, Search, RefreshCw, Key, Trash2, Mail, Phone } from 'lucide-react';
+import { Shield, Search, RefreshCw, Key, Trash2, Mail, Phone, Info } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import PersonnelDetailModal from './PersonnelDetailModal';
 
 interface UsersTabProps {
     unseenIds?: string[];
@@ -18,6 +19,8 @@ export default function UsersTab({ unseenIds = [], markAsViewed = () => {} }: Us
     const [selectedHierarchies, setSelectedHierarchies] = useState<string[]>([]);
     const [onlyNew, setOnlyNew] = useState(false);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [selectedUser, setSelectedUser] = useState<any>(null);
+    const [isUserModalOpen, setIsUserModalOpen] = useState(false);
     const { user: currentUser } = useAuth();
     const isSuperAdmin = currentUser?.role === 'super_admin';
 
@@ -231,7 +234,16 @@ export default function UsersTab({ unseenIds = [], markAsViewed = () => {} }: Us
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="flex items-center justify-between mb-4 px-1">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Resultados filtrados:</span>
+                    <span className="bg-armada-navy text-armada-gold px-3 py-1 rounded text-xs font-black border border-armada-gold/30 shadow-sm">
+                        {filteredUsers.length} de {usersList.length} expedientes
+                    </span>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-6">
                 {filteredUsers.map((u) => {
                     const isUnseen = unseenIds.includes(`usr_${u.id}`);
                     return (
@@ -247,13 +259,13 @@ export default function UsersTab({ unseenIds = [], markAsViewed = () => {} }: Us
                         )}
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex flex-col gap-1">
-                                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest self-start ${u.status === 'aprobado' ? 'bg-green-100 text-green-700' :
+                                <span className={`px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest self-start ${u.status === 'aprobado' ? 'bg-green-100 text-green-700' :
                                     u.status === 'pendiente' ? 'bg-yellow-100 text-yellow-700' :
                                         'bg-red-100 text-red-700'
                                     }`}>
                                     {u.status}
                                 </span>
-                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em]">{u.role}</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{u.role}</span>
                             </div>
                             {isSuperAdmin && u.id !== currentUser?.id && (
                                 <button onClick={() => handleDelete(u.id)} className="text-slate-300 hover:text-red-500 transition-colors p-1" title="Eliminar Expediente">
@@ -263,26 +275,35 @@ export default function UsersTab({ unseenIds = [], markAsViewed = () => {} }: Us
                         </div>
 
                         <div className="mb-4">
-                            <h4 className="font-black text-armada-navy uppercase text-sm tracking-tight leading-tight">{u.nombre} {u.apellido}</h4>
+                            <h4 
+                                className="font-black text-armada-navy uppercase text-base tracking-tight leading-tight cursor-pointer hover:text-armada-gold transition-colors flex items-center gap-1.5 group/name"
+                                onClick={() => {
+                                    setSelectedUser(u);
+                                    setIsUserModalOpen(true);
+                                }}
+                            >
+                                {u.nombre} {u.apellido}
+                                <Info size={14} className="opacity-0 group-hover/name:opacity-100 transition-opacity" />
+                            </h4>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
-                                <span className="bg-slate-800 text-armada-gold px-1.5 py-0.5 rounded text-[9px] font-black border border-armada-gold/30">{u.jerarquia || 'S/G'}</span>
-                                <div className="flex items-center gap-1">
-                                    <Shield className="text-slate-400" size={10} />
-                                    <span className="text-slate-500 text-[10px] font-black uppercase tracking-tighter">LM: {u.legajo}</span>
+                                <span className="bg-slate-800 text-armada-gold px-2 py-1 rounded text-xs font-black border border-armada-gold/30">{u.jerarquia || 'S/G'}</span>
+                                <div className="flex items-center gap-1.5">
+                                    <Shield className="text-slate-400" size={12} />
+                                    <span className="text-slate-500 text-xs font-black uppercase tracking-tighter">LM: {u.legajo}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="space-y-2 mb-6 flex-1">
+                        <div className="space-y-3 mb-6 flex-1">
                             <div className="flex items-center gap-2 text-slate-500">
-                                <Mail size={12} className="shrink-0" />
-                                <span className="text-[10px] font-medium truncate">{u.correo}</span>
+                                <Mail size={14} className="shrink-0" />
+                                <span className="text-xs font-medium truncate">{u.correo}</span>
                             </div>
                             <div className="flex items-center gap-2 text-slate-500">
-                                <Phone size={12} className="shrink-0" />
-                                <span className="text-[10px] font-medium">{u.telefono}</span>
+                                <Phone size={14} className="shrink-0" />
+                                <span className="text-xs font-medium">{u.telefono}</span>
                             </div>
-                            <div className="text-[9px] font-bold text-slate-400 uppercase mt-2">CI: {u.cedula}</div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase mt-2">CI: {u.cedula}</div>
                         </div>
 
                         <div className="pt-4 border-t border-slate-100 flex flex-col gap-3">
@@ -330,6 +351,12 @@ export default function UsersTab({ unseenIds = [], markAsViewed = () => {} }: Us
                     <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">No se han encontrado expedientes de personal con ese criterio</p>
                 </div>
             )}
+
+            <PersonnelDetailModal 
+                isOpen={isUserModalOpen} 
+                onClose={() => setIsUserModalOpen(false)} 
+                user={selectedUser} 
+            />
         </div>
     );
 }

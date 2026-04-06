@@ -352,7 +352,7 @@ export const getAdminReservations = async (req: AuthRequest, res: Response) => {
     try {
         const reservations = await prisma.reservation.findMany({
             include: {
-                user: { select: { id: true, nombre: true, apellido: true, cedula: true, legajo: true, jerarquia: true } },
+                user: { select: { id: true, nombre: true, apellido: true, cedula: true, legajo: true, jerarquia: true, correo: true, telefono: true, role: true, status: true } },
                 cabin: { include: { location: true } }
             },
             orderBy: { created_at: 'desc' }

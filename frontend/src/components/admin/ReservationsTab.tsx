@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { format } from 'date-fns';
 import { formatDateSafe } from '../../utils/dateUtils';
-import { Check, X, Clock, UserIcon, Anchor, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { Check, X, Clock, UserIcon, Anchor, RefreshCw, Search, Trash2, Info } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import PersonnelDetailModal from './PersonnelDetailModal';
 
 interface ReservationsTabProps {
     unseenIds?: string[];
@@ -20,6 +21,8 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
     const [searchType, setSearchType] = useState('todos');
     const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
     const [onlyNew, setOnlyNew] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<any>(null);
+    const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
     const loadReservations = () => {
         setLoading(true);
@@ -207,7 +210,16 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="flex items-center justify-between mb-4 px-1">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Resultados filtrados:</span>
+                    <span className="bg-armada-navy text-armada-gold px-3 py-1 rounded text-xs font-black border border-armada-gold/30 shadow-sm">
+                        {filteredReservations.length} de {reservations.length} solicitudes
+                    </span>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6 gap-6">
                 {filteredReservations.map((res) => {
                     const unseenReq = `req_${res.id}`;
                     const unseenCan = `can_${res.id}`;
@@ -230,34 +242,47 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
                             <div className="flex justify-between items-start mb-4">
                                 {getStatusBadge(res.status)}
                                 <div className="flex items-center gap-1.5 text-slate-400">
-                                    <Clock size={10} />
-                                    <span className="text-[8px] font-bold uppercase">{format(new Date(res.created_at), "dd/MM/yy HH:mm")}</span>
+                                    <Clock size={12} />
+                                    <span className="text-[10px] font-bold uppercase">{format(new Date(res.created_at), "dd/MM/yy HH:mm")}</span>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 mb-5 p-3 bg-slate-50 rounded border border-slate-100">
-                                <div className="bg-white p-2 rounded-full border border-slate-200 shadow-sm">
+                            <div 
+                                className="flex items-center gap-3 mb-5 p-3 bg-slate-50 rounded border border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors group/user shadow-sm active:scale-95"
+                                onClick={() => {
+                                    setSelectedUser(res.user);
+                                    setIsUserModalOpen(true);
+                                }}
+                                title="Click para ver expediente completo"
+                            >
+                                <div className="bg-white p-2 rounded-full border border-slate-200 shadow-sm group-hover/user:border-armada-gold transition-colors relative">
                                     <UserIcon size={14} className="text-armada-navy" />
+                                    <div className="absolute -top-1 -right-1 bg-armada-gold rounded-full p-0.5 shadow-sm opacity-0 group-hover/user:opacity-100 transition-opacity">
+                                        <Info size={8} className="text-white" />
+                                    </div>
                                 </div>
                                 <div className="overflow-hidden">
-                                    <div className="font-black text-armada-navy uppercase text-xs truncate">{res.user.nombre} {res.user.apellido}</div>
-                                    <div className="text-slate-400 text-[9px] font-bold uppercase truncate">L: {res.user.legajo} | CI: {res.user.cedula}</div>
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                        <span className="bg-slate-800 text-armada-gold px-1.5 py-0.5 rounded text-[8px] font-black border border-armada-gold/30">{res.user.jerarquia || 'S/G'}</span>
+                                        <div className="font-black text-armada-navy uppercase text-sm truncate">{res.user.nombre} {res.user.apellido}</div>
+                                    </div>
+                                    <div className="text-slate-400 text-[10px] font-bold uppercase truncate">LB: {res.user.legajo} | CI: {res.user.cedula}</div>
                                 </div>
                             </div>
 
                             <div className="space-y-4 mb-6 flex-1">
-                                <div className="flex items-start gap-3">
-                                    <Anchor size={14} className="text-armada-gold mt-1 shrink-0" />
+                                <div className="flex items-start gap-4">
+                                    <Anchor size={16} className="text-armada-gold mt-1 shrink-0" />
                                     <div>
-                                        <div className="font-black text-armada-navy text-xs uppercase tracking-tight">{res.cabin.location.name}</div>
-                                        <div className="text-slate-600 text-[10px] font-bold uppercase">{res.cabin.identifier} — {res.occupants} OCUPANTES</div>
+                                        <div className="font-black text-armada-navy text-sm uppercase tracking-tight">{res.cabin.location.name}</div>
+                                        <div className="text-slate-600 text-xs font-bold uppercase">{res.cabin.identifier} — {res.occupants} OCUPANTES</div>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-3">
-                                    <Clock size={14} className="text-slate-400 mt-1 shrink-0" />
+                                <div className="flex items-start gap-4">
+                                    <Clock size={16} className="text-slate-400 mt-1 shrink-0" />
                                     <div>
                                         <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Período de Estancia</div>
-                                        <div className="text-armada-navy text-xs font-black uppercase mt-0.5">
+                                        <div className="text-armada-navy text-sm font-black uppercase mt-0.5">
                                             {formatDateSafe(res.start_date, "dd MMM").toUpperCase()} AL {formatDateSafe(res.end_date, "dd MMM, yyyy").toUpperCase()}
                                         </div>
                                     </div>
@@ -284,10 +309,10 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
                                     </div>
                                 ) : (
                                     <div className={`${res.status === 'cancelada' ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-100'} p-3 rounded border transition-colors`}>
-                                        <span className={`text-[8px] font-black ${res.status === 'cancelada' ? 'text-red-400' : 'text-slate-400'} uppercase block mb-1`}>
+                                        <span className={`text-[10px] font-black ${res.status === 'cancelada' ? 'text-red-400' : 'text-slate-400'} uppercase block mb-1`}>
                                             {res.status === 'cancelada' ? 'Aviso de Anulación:' : 'Observaciones Administrativas:'}
                                         </span>
-                                        <p className={`text-[10px] ${res.status === 'cancelada' ? 'text-red-600' : 'text-slate-600'} font-bold italic`}>
+                                        <p className={`text-xs ${res.status === 'cancelada' ? 'text-red-600' : 'text-slate-600'} font-bold italic`}>
                                             {res.comments || (res.status === 'cancelada' ? 'El usuario ha anulado esta solicitud.' : 'Sin comentarios adicionales.')}
                                         </p>
                                     </div>
@@ -312,6 +337,12 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
                     <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">No hay solicitudes pendientes con ese criterio</p>
                 </div>
             )}
+
+            <PersonnelDetailModal 
+                isOpen={isUserModalOpen} 
+                onClose={() => setIsUserModalOpen(false)} 
+                user={selectedUser} 
+            />
         </div>
     );
 }
