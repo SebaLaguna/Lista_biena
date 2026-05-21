@@ -7,9 +7,10 @@ import PersonnelDetailModal from './PersonnelDetailModal';
 interface UsersTabProps {
     unseenIds?: string[];
     markAsViewed?: (id: string) => void;
+    markAllAsViewed?: () => void;
 }
 
-export default function UsersTab({ unseenIds = [], markAsViewed = () => {} }: UsersTabProps) {
+export default function UsersTab({ unseenIds = [], markAsViewed = () => {}, markAllAsViewed }: UsersTabProps) {
     const [usersList, setUsersList] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -41,6 +42,9 @@ export default function UsersTab({ unseenIds = [], markAsViewed = () => {} }: Us
         setActionLoading(id);
         try {
             await api.patch(`/users/${id}/status`, { status: newStatus });
+            if (unseenIds.includes(`usr_${id}`) && markAsViewed) {
+                markAsViewed(`usr_${id}`);
+            }
             loadUsers();
         } catch (err: any) {
             alert(err.response?.data?.error || 'Error al actualizar usuario');
@@ -54,6 +58,9 @@ export default function UsersTab({ unseenIds = [], markAsViewed = () => {} }: Us
         setActionLoading(id);
         try {
             await api.patch(`/users/${id}/role`, { role: newRole });
+            if (unseenIds.includes(`usr_${id}`) && markAsViewed) {
+                markAsViewed(`usr_${id}`);
+            }
             loadUsers();
         } catch (err: any) {
             alert(err.response?.data?.error || 'Error al actualizar rol');
@@ -224,6 +231,14 @@ export default function UsersTab({ unseenIds = [], markAsViewed = () => {} }: Us
                     </div>
 
                     <div className="flex gap-2 self-end shrink-0 pb-1">
+                        {unseenIds.length > 0 && markAllAsViewed && (
+                            <button
+                                onClick={markAllAsViewed}
+                                className="flex items-center justify-center gap-2 bg-red-500 text-white px-6 py-2.5 rounded font-black text-[10px] uppercase tracking-widest hover:bg-red-600 transition-all shadow border border-red-650 shrink-0"
+                            >
+                                MARCAR TODAS COMO LEÍDAS
+                            </button>
+                        )}
                         <button
                             onClick={loadUsers}
                             className="flex items-center justify-center gap-2 bg-armada-navy text-armada-gold px-6 py-2.5 rounded font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow border border-armada-gold/30 shrink-0"
@@ -250,12 +265,18 @@ export default function UsersTab({ unseenIds = [], markAsViewed = () => {} }: Us
                     <div
                         key={u.id}
                         className="institutional-card p-6 flex flex-col relative group animate-fade-in transition-all hover:border-armada-gold"
-                        onMouseEnter={() => {
-                            if (isUnseen && markAsViewed) markAsViewed(`usr_${u.id}`);
-                        }}
                     >
                         {isUnseen && (
-                            <div className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-sm flex items-center justify-center animate-pulse z-10"></div>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (markAsViewed) markAsViewed(`usr_${u.id}`);
+                                }}
+                                className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white font-black text-[9px] uppercase tracking-wider px-2 py-0.5 rounded border border-white shadow-sm flex items-center justify-center animate-pulse z-10 active:scale-95 transition-all"
+                                title="Marcar como leída"
+                            >
+                                NUEVA
+                            </button>
                         )}
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex flex-col gap-1">
@@ -280,6 +301,7 @@ export default function UsersTab({ unseenIds = [], markAsViewed = () => {} }: Us
                                 onClick={() => {
                                     setSelectedUser(u);
                                     setIsUserModalOpen(true);
+                                    if (isUnseen && markAsViewed) markAsViewed(`usr_${u.id}`);
                                 }}
                             >
                                 {u.nombre} {u.apellido}
@@ -287,6 +309,9 @@ export default function UsersTab({ unseenIds = [], markAsViewed = () => {} }: Us
                             </h4>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
                                 <span className="bg-slate-800 text-armada-gold px-2 py-1 rounded text-xs font-black border border-armada-gold/30">{u.jerarquia || 'S/G'}</span>
+                                {u.cuerpo && (
+                                    <span className="bg-armada-navy/10 text-armada-navy px-2 py-0.5 rounded text-xs font-black border border-armada-navy/10">{u.cuerpo}</span>
+                                )}
                                 <div className="flex items-center gap-1.5">
                                     <Shield className="text-slate-400" size={12} />
                                     <span className="text-slate-500 text-xs font-black uppercase tracking-tighter">LM: {u.legajo}</span>

@@ -5,13 +5,15 @@ import { formatDateSafe } from '../../utils/dateUtils';
 import { Check, X, Clock, UserIcon, Anchor, RefreshCw, Search, Trash2, Info } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import PersonnelDetailModal from './PersonnelDetailModal';
+import CabinAllocationModal from './CabinAllocationModal';
 
 interface ReservationsTabProps {
     unseenIds?: string[];
     markAsViewed?: (id: string) => void;
+    markAllAsViewed?: () => void;
 }
 
-export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {} }: ReservationsTabProps) {
+export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {}, markAllAsViewed }: ReservationsTabProps) {
     const { user: currentUser } = useAuth();
     const isSuperAdmin = currentUser?.role === 'super_admin';
     const [reservations, setReservations] = useState<any[]>([]);
@@ -23,20 +25,43 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
     const [onlyNew, setOnlyNew] = useState(false);
     const [selectedUser, setSelectedUser] = useState<any>(null);
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+    const [selectedEstivalRes, setSelectedEstivalRes] = useState<any>(null);
+    const [isAllocationModalOpen, setIsAllocationModalOpen] = useState(false);
+    const [limit, setLimit] = useState<string>('50');
+    const [totalCount, setTotalCount] = useState<number>(0);
 
     const loadReservations = () => {
         setLoading(true);
-        api.get('/reservations/admin')
-            .then(res => setReservations(res.data))
+        const url = limit === 'todos' ? '/reservations/admin' : `/reservations/admin?limit=${limit}`;
+        api.get(url)
+            .then(res => {
+                setReservations(res.data);
+                const total = res.headers['x-total-count'];
+                if (total) {
+                    setTotalCount(parseInt(total));
+                } else {
+                    setTotalCount(res.data.length);
+                }
+            })
             .catch(err => console.error(err))
             .finally(() => setLoading(false));
     };
 
     useEffect(() => {
         loadReservations();
-    }, []);
+    }, [limit]);
 
     const handleStatusUpdate = async (id: string, newStatus: string) => {
+        const reservation = reservations.find(r => r.id === id);
+        if (!reservation) return;
+
+        if (newStatus === 'aprobada' && !reservation.cabin_id) {
+            // Pending estival reservation: must select cabin first
+            setSelectedEstivalRes(reservation);
+            setIsAllocationModalOpen(true);
+            return;
+        }
+
         let comments = `Solicitud ${newStatus} por el Estado Mayor / Administración`;
 
         if (newStatus === 'rechazada') {
@@ -56,12 +81,45 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
                 status: newStatus,
                 comments
             });
+            const unseenReq = `req_${id}`;
+            const unseenCan = `can_${id}`;
+            if (markAsViewed) {
+                if (unseenIds.includes(unseenReq)) markAsViewed(unseenReq);
+                if (unseenIds.includes(unseenCan)) markAsViewed(unseenCan);
+            }
             loadReservations();
         } catch (err: any) {
             console.error(err);
             alert(err.response?.data?.error || 'Error al procesar la orden administrativa');
         } finally {
             setActionLoading(null);
+        }
+    };
+
+    const handleAllocateCabin = async (cabinId: string) => {
+        if (!selectedEstivalRes) return;
+        setIsAllocationModalOpen(false);
+        const id = selectedEstivalRes.id;
+        setActionLoading(id);
+        try {
+            await api.put(`/reservations/admin/${id}/status`, {
+                status: 'aprobada',
+                cabin_id: cabinId,
+                comments: 'Postulación estival autorizada con cabaña asignada'
+            });
+            const unseenReq = `req_${id}`;
+            const unseenCan = `can_${id}`;
+            if (markAsViewed) {
+                if (unseenIds.includes(unseenReq)) markAsViewed(unseenReq);
+                if (unseenIds.includes(unseenCan)) markAsViewed(unseenCan);
+            }
+            loadReservations();
+        } catch (err: any) {
+            console.error(err);
+            alert(err.response?.data?.error || 'Error al autorizar la postulación estival');
+        } finally {
+            setActionLoading(null);
+            setSelectedEstivalRes(null);
         }
     };
 
@@ -114,7 +172,7 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
         if (!term) return true;
 
         const solStr = `${res.user.nombre} ${res.user.apellido} ${res.user.legajo}`.toLowerCase();
-        const uniStr = `${res.cabin.location.name} ${res.cabin.identifier}`.toLowerCase();
+        const uniStr = `${res.cabin?.location?.name || res.location?.name || ''} ${res.cabin?.identifier || 'Postulación Estival'}`.toLowerCase();
 
         // Formatear fechas de forma segura para búsqueda
         const fInicio = formatDateSafe(res.start_date, "dd MMM yyyy").toLowerCase();
@@ -171,7 +229,7 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
 
                 {/* BARRA DE BÚSQUEDA DE TEXTO */}
                 <div className="flex flex-col md:flex-row gap-4 items-center">
-                    <div className="flex flex-col gap-1 w-full md:w-64">
+                    <div className="flex flex-col gap-1 w-full md:w-48">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Buscar por Campo</label>
                         <select
                             value={searchType}
@@ -182,6 +240,21 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
                             <option value="solicitante">Funcionario (Nombre/LEG)</option>
                             <option value="unidad">Sede / Unidad</option>
                             <option value="fecha">Fecha de Estancia</option>
+                        </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1 w-full md:w-40">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Límite de Carga</label>
+                        <select
+                            value={limit}
+                            onChange={(e) => setLimit(e.target.value)}
+                            className="border-2 border-slate-100 rounded focus:border-armada-navy px-4 py-2.5 font-bold text-[11px] uppercase text-slate-500 outline-none transition-all bg-slate-50/50"
+                        >
+                            <option value="30">30 Solicitudes</option>
+                            <option value="50">50 Solicitudes</option>
+                            <option value="100">100 Solicitudes</option>
+                            <option value="200">200 Solicitudes</option>
+                            <option value="todos">Cargar Todo</option>
                         </select>
                     </div>
 
@@ -200,6 +273,14 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
                     </div>
 
                     <div className="flex gap-2 self-end shrink-0 pb-1">
+                        {unseenIds.length > 0 && markAllAsViewed && (
+                            <button
+                                onClick={markAllAsViewed}
+                                className="flex items-center justify-center gap-2 bg-red-500 text-white px-6 py-2.5 rounded font-black text-[10px] uppercase tracking-widest hover:bg-red-650 transition-all shadow border border-red-600 shrink-0"
+                            >
+                                MARCAR TODAS COMO LEÍDAS
+                            </button>
+                        )}
                         <button
                             onClick={loadReservations}
                             className="flex items-center justify-center gap-2 bg-armada-navy text-armada-gold px-6 py-2.5 rounded font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all shadow border border-armada-gold/30 shrink-0"
@@ -214,7 +295,7 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
                 <div className="flex items-center gap-2">
                     <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Resultados filtrados:</span>
                     <span className="bg-armada-navy text-armada-gold px-3 py-1 rounded text-xs font-black border border-armada-gold/30 shadow-sm">
-                        {filteredReservations.length} de {reservations.length} solicitudes
+                        {filteredReservations.length} de {limit === 'todos' ? reservations.length : totalCount} solicitudes {limit !== 'todos' && `(cargadas: ${reservations.length})`}
                     </span>
                 </div>
             </div>
@@ -229,15 +310,21 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
                         <div
                             key={res.id}
                             className="relative institutional-card p-6 flex flex-col group animate-fade-in transition-all hover:border-armada-gold shadow-sm"
-                            onMouseEnter={() => {
-                                if (isUnseen && markAsViewed) {
-                                    if (unseenIds.includes(unseenReq)) markAsViewed(unseenReq);
-                                    if (unseenIds.includes(unseenCan)) markAsViewed(unseenCan);
-                                }
-                            }}
                         >
                             {isUnseen && (
-                                <div className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full border-2 border-white shadow-sm flex items-center justify-center animate-pulse z-10"></div>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (markAsViewed) {
+                                            if (unseenIds.includes(unseenReq)) markAsViewed(unseenReq);
+                                            if (unseenIds.includes(unseenCan)) markAsViewed(unseenCan);
+                                        }
+                                    }}
+                                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white font-black text-[9px] uppercase tracking-wider px-2 py-0.5 rounded border border-white shadow-sm flex items-center justify-center animate-pulse z-10 active:scale-95 transition-all"
+                                    title="Marcar como leída"
+                                >
+                                    NUEVA
+                                </button>
                             )}
                             <div className="flex justify-between items-start mb-4">
                                 {getStatusBadge(res.status)}
@@ -252,6 +339,10 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
                                 onClick={() => {
                                     setSelectedUser(res.user);
                                     setIsUserModalOpen(true);
+                                    if (isUnseen && markAsViewed) {
+                                        if (unseenIds.includes(unseenReq)) markAsViewed(unseenReq);
+                                        if (unseenIds.includes(unseenCan)) markAsViewed(unseenCan);
+                                    }
                                 }}
                                 title="Click para ver expediente completo"
                             >
@@ -264,6 +355,9 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
                                 <div className="overflow-hidden">
                                     <div className="flex items-center gap-2 mb-0.5">
                                         <span className="bg-slate-800 text-armada-gold px-1.5 py-0.5 rounded text-[8px] font-black border border-armada-gold/30">{res.user.jerarquia || 'S/G'}</span>
+                                        {res.user.cuerpo && (
+                                            <span className="bg-armada-navy/10 text-armada-navy px-1.5 py-0.5 rounded text-[8px] font-black border border-armada-navy/10">{res.user.cuerpo}</span>
+                                        )}
                                         <div className="font-black text-armada-navy uppercase text-sm truncate">{res.user.nombre} {res.user.apellido}</div>
                                     </div>
                                     <div className="text-slate-400 text-[10px] font-bold uppercase truncate">LB: {res.user.legajo} | CI: {res.user.cedula}</div>
@@ -274,8 +368,24 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
                                 <div className="flex items-start gap-4">
                                     <Anchor size={16} className="text-armada-gold mt-1 shrink-0" />
                                     <div>
-                                        <div className="font-black text-armada-navy text-sm uppercase tracking-tight">{res.cabin.location.name}</div>
-                                        <div className="text-slate-600 text-xs font-bold uppercase">{res.cabin.identifier} — {res.occupants} OCUPANTES</div>
+                                        <div className="font-black text-armada-navy text-sm uppercase tracking-tight">
+                                            {res.cabin?.location?.name || res.location?.name || 'Sede Solicitada'}
+                                        </div>
+                                        <div className="text-slate-600 text-xs font-bold uppercase">
+                                            {res.cabin?.identifier || 'POSTULACIÓN ESTIVAL'} — {res.occupants} OCUPANTES
+                                        </div>
+                                        {res.priority && (
+                                            <div className="mt-1 flex flex-wrap gap-1.5">
+                                                <span className="bg-armada-gold text-armada-navy px-1.5 py-0.5 rounded text-[8px] font-black border border-armada-navy/15 shadow-sm">
+                                                    OPCIÓN {res.priority}
+                                                </span>
+                                                {res.application_group && (
+                                                    <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[8px] font-bold border border-slate-200">
+                                                        GRUPO: {res.application_group.substring(0, 8).toUpperCase()}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-4">
@@ -342,6 +452,13 @@ export default function ReservationsTab({ unseenIds = [], markAsViewed = () => {
                 isOpen={isUserModalOpen} 
                 onClose={() => setIsUserModalOpen(false)} 
                 user={selectedUser} 
+            />
+
+            <CabinAllocationModal
+                isOpen={isAllocationModalOpen}
+                onClose={() => { setIsAllocationModalOpen(false); setSelectedEstivalRes(null); }}
+                onConfirm={handleAllocateCabin}
+                reservation={selectedEstivalRes}
             />
         </div>
     );

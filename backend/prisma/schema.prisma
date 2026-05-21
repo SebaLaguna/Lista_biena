@@ -14,6 +14,7 @@ model User {
   cedula         String               @unique
   legajo         String               @unique
   jerarquia      Hierarchy
+  cuerpo         String?
   correo         String               @unique
   telefono       String?
   password_hash  String
@@ -26,10 +27,12 @@ model User {
 }
 
 model Location {
-  id          String  @id @default(uuid())
-  name        String  @unique
+  id          String        @id @default(uuid())
+  name        String        @unique
   description String?
+  mando       Mando?
   cabins      Cabin[]
+  reservations Reservation[]
 }
 
 model Cabin {
@@ -45,18 +48,22 @@ model Cabin {
 }
 
 model Reservation {
-  id         String               @id @default(uuid())
-  user_id    String
-  cabin_id   String
-  start_date DateTime             @db.Date
-  end_date   DateTime             @db.Date
-  occupants  Int                  @default(1)
-  status     Status               @default(pendiente)
-  created_at DateTime             @default(now())
-  cabin      Cabin                @relation(fields: [cabin_id], references: [id])
-  user       User                 @relation(fields: [user_id], references: [id])
-  comments   String?
-  history    ReservationHistory[]
+  id                String               @id @default(uuid())
+  user_id           String
+  cabin_id          String?              // Opcional para postulaciones estivales
+  location_id       String?              // Sede solicitada
+  start_date        DateTime             @db.Date
+  end_date          DateTime             @db.Date
+  occupants         Int                  @default(1)
+  status            Status               @default(pendiente)
+  created_at        DateTime             @default(now())
+  priority          Int?                 // Prioridad 1 o 2
+  application_group String?              // Para agrupar opciones estivales
+  cabin             Cabin?               @relation(fields: [cabin_id], references: [id])
+  location          Location?            @relation(fields: [location_id], references: [id])
+  user              User                 @relation(fields: [user_id], references: [id])
+  comments          String?
+  history           ReservationHistory[]
 }
 
 model ReservationHistory {
@@ -130,4 +137,10 @@ enum Hierarchy {
   CS
   MP
   RET
+}
+
+enum Mando {
+  COMFLO
+  DIMAT
+  PRENA
 }

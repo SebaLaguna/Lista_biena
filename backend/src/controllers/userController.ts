@@ -22,6 +22,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
                 cedula: true,
                 legajo: true,
                 jerarquia: true,
+                cuerpo: true,
                 correo: true,
                 telefono: true,
                 status: true,
@@ -55,6 +56,7 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
                 telefono: true,
                 role: true,
                 jerarquia: true,
+                cuerpo: true,
                 status: true,
                 created_at: true
             },
@@ -206,3 +208,103 @@ export const resetUserPassword = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ error: 'Error al reestablecer la contraseña.' });
     }
 };
+
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ error: 'No autorizado' });
+        }
+
+        const { nombre, apellido, cedula, legajo, jerarquia, cuerpo, correo, telefono } = req.body;
+
+        if (!nombre || nombre.trim() === '') return res.status(400).json({ error: 'El nombre es obligatorio.' });
+        if (!apellido || apellido.trim() === '') return res.status(400).json({ error: 'El apellido es obligatorio.' });
+        if (!cedula || cedula.trim() === '') return res.status(400).json({ error: 'La cédula es obligatoria.' });
+        if (!legajo || legajo.trim() === '') return res.status(400).json({ error: 'El legajo es obligatorio.' });
+        if (!jerarquia || jerarquia.trim() === '') return res.status(400).json({ error: 'La jerarquía es obligatoria.' });
+        if (!cuerpo || cuerpo.trim() === '') return res.status(400).json({ error: 'El cuerpo es obligatorio.' });
+        if (!correo || correo.trim() === '') return res.status(400).json({ error: 'El correo es obligatorio.' });
+        if (!telefono || telefono.trim() === '') return res.status(400).json({ error: 'El teléfono es obligatorio.' });
+
+        // Basic format checks
+        if (!/^\d+$/.test(cedula)) {
+            return res.status(400).json({ error: 'La cédula debe contener solo números.' });
+        }
+        if (!/^\d+$/.test(legajo)) {
+            return res.status(400).json({ error: 'El legajo debe contener solo números.' });
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+            return res.status(400).json({ error: 'El correo electrónico no tiene un formato válido.' });
+        }
+
+        // Check if cedula is already taken by another user
+        const existingUserCedula = await prisma.user.findFirst({
+            where: { cedula, NOT: { id: userId } }
+        });
+        if (existingUserCedula) {
+            return res.status(400).json({ error: 'La cédula ya está registrada por otro usuario.' });
+        }
+
+        // Check if legajo is already taken by another user
+        const existingUserLegajo = await prisma.user.findFirst({
+            where: { legajo, NOT: { id: userId } }
+        });
+        if (existingUserLegajo) {
+            return res.status(400).json({ error: 'El legajo ya está registrado por otro usuario.' });
+        }
+
+        // Check if email is already taken by another user
+        const existingUserCorreo = await prisma.user.findFirst({
+            where: { correo, NOT: { id: userId } }
+        });
+        if (existingUserCorreo) {
+            return res.status(400).json({ error: 'El correo ya está registrado por otro usuario.' });
+        }
+
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                nombre,
+                apellido,
+                cedula,
+                legajo,
+                jerarquia,
+                cuerpo,
+                correo,
+                telefono
+            },
+            select: {
+                id: true,
+                nombre: true,
+                apellido: true,
+                cedula: true,
+                legajo: true,
+                jerarquia: true,
+                cuerpo: true,
+                correo: true,
+                telefono: true,
+                status: true,
+                role: true,
+                created_at: true
+            }
+        });
+
+        // Audit log
+        await prisma.systemLog.create({
+            data: {
+                user_id: userId,
+                action: 'update_profile',
+                entity_type: 'User',
+                entity_id: userId,
+                details: `Perfil actualizado por el propio usuario: ${correo}`
+            }
+        });
+
+        res.json(updatedUser);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al actualizar el perfil.' });
+    }
+};
+

@@ -48,11 +48,11 @@ export const getLocations = async (req: AuthRequest, res: Response) => {
 
 export const createLocation = async (req: AuthRequest, res: Response) => {
     try {
-        const { name, description } = req.body;
+        const { name, description, mando } = req.body;
         const adminId = req.user?.id;
 
         const location = await prisma.location.create({
-            data: { name, description }
+            data: { name, description, mando }
         });
 
         await prisma.systemLog.create({
@@ -78,12 +78,12 @@ export const createLocation = async (req: AuthRequest, res: Response) => {
 export const updateLocation = async (req: AuthRequest, res: Response) => {
     try {
         const id = req.params.id as string;
-        const { name, description } = req.body;
+        const { name, description, mando } = req.body;
         const adminId = req.user?.id;
 
         const location = await prisma.location.update({
             where: { id },
-            data: { name, description }
+            data: { name, description, mando }
         });
 
         await prisma.systemLog.create({

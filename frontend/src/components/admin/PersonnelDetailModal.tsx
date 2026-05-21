@@ -7,6 +7,7 @@ interface PersonnelDetailModalProps {
         nombre: string;
         apellido: string;
         jerarquia: string;
+        cuerpo?: string | null;
         legajo: string;
         cedula: string;
         correo: string;
@@ -65,6 +66,11 @@ export default function PersonnelDetailModal({ isOpen, onClose, user }: Personne
                                     <span className="bg-slate-800 text-armada-gold px-3 py-1 rounded text-xs font-black border border-armada-gold/30 shadow-sm">
                                         {user.jerarquia || 'S/G'}
                                     </span>
+                                    {user.cuerpo && (
+                                        <span className="bg-armada-navy/10 text-armada-navy px-3 py-1 rounded text-xs font-black border border-armada-navy/10 shadow-sm">
+                                            {user.cuerpo}
+                                        </span>
+                                    )}
                                     <span className={`px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest ${
                                         user.status === 'aprobado' ? 'bg-green-50 text-green-700 border-green-200' : 
                                         user.status === 'pendiente' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 
@@ -95,12 +101,18 @@ export default function PersonnelDetailModal({ isOpen, onClose, user }: Personne
                             </div>
                             <div className="space-y-1">
                                 <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    <Shield size={12} /> Cuerpo
+                                </label>
+                                <p className="text-slate-600 font-bold text-base uppercase">{user.cuerpo || 'SIN CUERPO'}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                     <Shield size={12} /> Rol de Sistema
                                 </label>
                                 <p className="text-slate-600 font-bold text-base uppercase">{getRoleLabel(user.role)}</p>
                             </div>
                             {user.created_at && (
-                                <div className="space-y-1">
+                                <div className="space-y-1 col-span-2">
                                     <label className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                         <Calendar size={12} /> Fecha Alta
                                     </label>

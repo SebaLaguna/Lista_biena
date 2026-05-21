@@ -19,7 +19,6 @@ export default function Navbar() {
 
     if (!user) return null;
 
-    const isSuperAdmin = user.role === 'super_admin';
     const isAdmin = user.role === 'super_admin' || user.role === 'admin_biena';
 
     const navLinks = [];

@@ -7,6 +7,7 @@ interface Location {
     id: string;
     name: string;
     description: string;
+    mando?: 'COMFLO' | 'DIMAT' | 'PRENA' | null;
     _count?: {
         cabins: number;
     };
@@ -24,7 +25,8 @@ export default function LocationsTab() {
 
     const [formData, setFormData] = useState({
         name: '',
-        description: ''
+        description: '',
+        mando: ''
     });
 
     const fetchLocations = async () => {
@@ -46,12 +48,14 @@ export default function LocationsTab() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const res = editingLoc
-                ? await api.patch(`/admin/locations/${editingLoc.id}`, formData)
-                : await api.post('/admin/locations', formData);
+            if (editingLoc) {
+                await api.patch(`/admin/locations/${editingLoc.id}`, formData);
+            } else {
+                await api.post('/admin/locations', formData);
+            }
 
             setShowModal(false);
-            setFormData({ name: '', description: '' });
+            setFormData({ name: '', description: '', mando: '' });
             setEditingLoc(null);
             fetchLocations();
         } catch (err: any) {
@@ -91,7 +95,7 @@ export default function LocationsTab() {
                     <button
                         onClick={() => {
                             setEditingLoc(null);
-                            setFormData({ name: '', description: '' });
+                            setFormData({ name: '', description: '', mando: '' });
                             setShowModal(true);
                         }}
                         className="flex items-center justify-center gap-3 bg-armada-navy text-armada-gold px-6 py-3 rounded font-black text-sm uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg border border-armada-gold/30 shrink-0"
@@ -120,7 +124,7 @@ export default function LocationsTab() {
                                             <button
                                                 onClick={() => {
                                                     setEditingLoc(loc);
-                                                    setFormData({ name: loc.name, description: loc.description });
+                                                    setFormData({ name: loc.name, description: loc.description, mando: loc.mando || '' });
                                                     setShowModal(true);
                                                 }}
                                                 className="p-3 text-slate-400 hover:text-armada-navy transition-colors bg-slate-50 hover:bg-slate-100 rounded-lg"
@@ -186,6 +190,7 @@ export default function LocationsTab() {
                                     placeholder="Detalles sobre la ubicación..."
                                 />
                             </div>
+
 
                             <button
                                 type="submit"

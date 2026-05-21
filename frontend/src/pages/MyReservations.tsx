@@ -81,7 +81,7 @@ export default function MyReservations() {
         const term = searchTerm.toLowerCase();
         let matchesText = true;
         if (term) {
-            const locStr = `${res.cabin.location.name} ${res.cabin.identifier}`.toLowerCase();
+            const locStr = `${res.cabin?.location?.name || res.location?.name || ''} ${res.cabin?.identifier || ''}`.toLowerCase();
             matchesText = locStr.includes(term);
         }
 
@@ -173,7 +173,7 @@ export default function MyReservations() {
                                                 <span>Destino Naval</span>
                                             </div>
                                             <h3 className="text-lg md:text-xl font-black text-armada-navy uppercase tracking-tight">
-                                                {reservation.cabin.location.name} — {reservation.cabin.identifier}
+                                                {reservation.cabin?.location?.name || reservation.location?.name || 'Sede sin cabaña'} {reservation.cabin?.identifier ? `— ${reservation.cabin.identifier}` : '(Postulación Estival)'}
                                             </h3>
                                         </div>
                                         <span className={`px-4 py-1.5 rounded text-[9px] md:text-[10px] font-black uppercase tracking-widest border shadow-sm w-full sm:w-auto text-center ${getStatusStyles(reservation.status)}`}>
@@ -199,7 +199,7 @@ export default function MyReservations() {
                                             </div>
                                             <div>
                                                 <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Ubicación Geográfica</p>
-                                                <p className="text-xs md:text-sm font-bold text-slate-700">{reservation.cabin.location.name}, Uruguay</p>
+                                                <p className="text-xs md:text-sm font-bold text-slate-700">{reservation.cabin?.location?.name || reservation.location?.name || 'Sede'}, Uruguay</p>
                                             </div>
                                         </div>
                                     </div>

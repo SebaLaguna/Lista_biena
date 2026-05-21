@@ -6,22 +6,30 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('--- BIENA SYSTEM BULK SEEDING START ---');
 
+    console.log('Cleaning up existing database records (users, reservations, history, estival periods) for a fresh seed...');
+    await prisma.reservationHistory.deleteMany({});
+    await prisma.reservation.deleteMany({});
+    await prisma.user.deleteMany({});
+    await prisma.estivalPeriod.deleteMany({});
+
     // 1. Locations
     const locationsData = [
-        { name: 'Carmelo', description: 'Base Naval de Carmelo - Destino de Descanso' },
-        { name: 'Laguna del Sauce', description: 'Base Aeronaval Capitán Carlos A. Curbelo' },
-        { name: 'Jose Ignacio', description: 'Cabañas Exclusivas en Jose Ignacio' },
-        { name: 'La Paloma', description: 'Cabañas en el balneario La Paloma - Rocha' },
-        { name: 'Cabo Polonio', description: 'Refugio Natural en Cabo Polonio' },
-        { name: 'Santa Teresa', description: 'Parque Nacional Santa Teresa - Servicio de Alojamiento' }
+        { name: 'Carmelo', description: 'Base Naval de Carmelo - Destino de Descanso', mando: 'PRENA' },
+        { name: 'Laguna del Sauce', description: 'Base Aeronaval Capitán Carlos A. Curbelo', mando: 'COMFLO' },
+        { name: 'Jose Ignacio', description: 'Cabañas Exclusivas en Jose Ignacio', mando: 'DIMAT' },
+        { name: 'La Paloma', description: 'Cabañas en el balneario La Paloma - Rocha', mando: 'COMFLO' },
+        { name: 'Cabo Polonio', description: 'Refugio Natural en Cabo Polonio', mando: 'DIMAT' },
+        { name: 'Santa Teresa', description: 'Parque Nacional Santa Teresa - Servicio de Alojamiento', mando: 'COMFLO' },
+        { name: 'Colonia', description: 'Base Naval de Colonia - Alojamiento', mando: 'DIMAT' },
+        { name: 'Atlántida', description: 'Cabañas en Atlántida', mando: 'PRENA' }
     ];
 
     const locationsMap: { [key: string]: any } = {};
     for (const loc of locationsData) {
         locationsMap[loc.name] = await prisma.location.upsert({
             where: { name: loc.name },
-            update: { description: loc.description },
-            create: { name: loc.name, description: loc.description }
+            update: { description: loc.description, mando: loc.mando as any },
+            create: { name: loc.name, description: loc.description, mando: loc.mando as any }
         });
     }
     console.log('✔ Locations verified.');
@@ -33,7 +41,9 @@ async function main() {
         { locName: 'Jose Ignacio', count: 2, capacity: 4 },
         { locName: 'La Paloma', count: 15, capacity: 4 },
         { locName: 'Cabo Polonio', count: 5, capacity: 2 },
-        { locName: 'Santa Teresa', count: 8, capacity: 5 }
+        { locName: 'Santa Teresa', count: 8, capacity: 5 },
+        { locName: 'Colonia', count: 3, capacity: 4 },
+        { locName: 'Atlántida', count: 3, capacity: 4 }
     ];
 
     for (const item of cabinCounts) {
@@ -125,8 +135,6 @@ async function main() {
 
     // 4. Reservation Generation (Realistic & Non-Overlapping)
     console.log('Generating ~180 realistic reservations...');
-    await prisma.reservationHistory.deleteMany({});
-    await prisma.reservation.deleteMany({});
 
     const allCabins = await prisma.cabin.findMany();
     
@@ -169,6 +177,18 @@ async function main() {
     }
 
     console.log('✔ Reservations successfully distributed across 2025.');
+
+    // 5. Estival Periods Seeding
+    console.log('Seeding Estival Periods...');
+    await prisma.estivalPeriod.create({
+        data: {
+            start_date: new Date(2026, 11, 7), // Lunes, 7 de Diciembre de 2026
+            end_date: new Date(2027, 2, 29),    // Lunes, 29 de Marzo de 2027
+            description: 'Temporada Estival 2026-2027'
+        }
+    });
+    console.log('✔ Estival periods seeded.');
+
     console.log('--- SEEDING COMPLETE! SYSTEM IS ALIVE ---');
 }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheck, Users, Home, CalendarX, Activity, LayoutList, MapPin } from 'lucide-react';
+import { ShieldCheck, Users, Home, CalendarX, Activity, LayoutList, MapPin, Grid } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
@@ -10,10 +10,9 @@ import LocationsTab from '../components/admin/LocationsTab';
 import BlockedDatesTab from '../components/admin/BlockedDatesTab';
 import LogsTab from '../components/admin/LogsTab';
 import EstivalTab from '../components/admin/EstivalTab';
+import TableroEstival from '../components/admin/TableroEstival';
 
-
-
-type Tab = 'reservations' | 'users' | 'locations' | 'cabins' | 'blocked_dates' | 'estival_periods' | 'logs';
+type Tab = 'reservations' | 'users' | 'locations' | 'cabins' | 'blocked_dates' | 'estival_periods' | 'logs' | 'planner';
 
 
 export default function AdminPanel() {
@@ -53,6 +52,24 @@ export default function AdminPanel() {
     const markAsViewed = (id: string) => {
         if (!viewedItems.includes(id)) {
             const newViewed = [...viewedItems, id];
+            setViewedItems(newViewed);
+            localStorage.setItem('biena_viewedItems', JSON.stringify(newViewed));
+        }
+    };
+
+    const markAllReservationsAsViewed = () => {
+        const itemsToMark = [...stats.pendingReservationIds, ...stats.cancelledReservationIds].filter(id => !viewedItems.includes(id));
+        if (itemsToMark.length > 0) {
+            const newViewed = [...viewedItems, ...itemsToMark];
+            setViewedItems(newViewed);
+            localStorage.setItem('biena_viewedItems', JSON.stringify(newViewed));
+        }
+    };
+
+    const markAllUsersAsViewed = () => {
+        const itemsToMark = stats.pendingUserIds.filter(id => !viewedItems.includes(id));
+        if (itemsToMark.length > 0) {
+            const newViewed = [...viewedItems, ...itemsToMark];
             setViewedItems(newViewed);
             localStorage.setItem('biena_viewedItems', JSON.stringify(newViewed));
         }
@@ -136,6 +153,13 @@ export default function AdminPanel() {
                 >
                     <Activity size={16} /> Temporadas
                 </button>
+                <button
+                    onClick={() => setActiveTab('planner')}
+                    className={`flex items-center gap-2 px-4 py-3 rounded-t-lg font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === 'planner' ? 'bg-armada-navy text-armada-gold shadow-lg transform -translate-y-1' : 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                        }`}
+                >
+                    <Grid size={16} /> Planificador Estival
+                </button>
                 {isSuperAdmin && (
                     <button
                         onClick={() => setActiveTab('logs')}
@@ -152,18 +176,21 @@ export default function AdminPanel() {
                     <ReservationsTab 
                         unseenIds={[...unseenPendingReservations, ...unseenCancelledReservations]} 
                         markAsViewed={markAsViewed}
+                        markAllAsViewed={markAllReservationsAsViewed}
                     />
                 )}
                 {activeTab === 'users' && (
                     <UsersTab 
                         unseenIds={unseenPendingUsers} 
                         markAsViewed={markAsViewed} 
+                        markAllAsViewed={markAllUsersAsViewed}
                     />
                 )}
                 {activeTab === 'locations' && isSuperAdmin && <LocationsTab />}
                 {activeTab === 'cabins' && <CabinsTab />}
                 {activeTab === 'blocked_dates' && <BlockedDatesTab />}
                 {activeTab === 'estival_periods' && <EstivalTab />}
+                {activeTab === 'planner' && <TableroEstival />}
                 {activeTab === 'logs' && isSuperAdmin && <LogsTab />}
             </div>
 

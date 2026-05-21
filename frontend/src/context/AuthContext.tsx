@@ -9,6 +9,8 @@ interface User {
     cedula: string;
     legajo: string;
     jerarquia: string;
+    cuerpo?: string | null;
+    telefono?: string | null;
     status: string;
     role: string;
 }
@@ -18,6 +20,7 @@ interface AuthContextType {
     token: string | null;
     login: (token: string, user: User) => void;
     logout: () => void;
+    updateUser: (updatedUser: User) => void;
     loading: boolean;
 }
 
@@ -26,6 +29,7 @@ const AuthContext = createContext<AuthContextType>({
     token: null,
     login: () => { },
     logout: () => { },
+    updateUser: () => { },
     loading: true
 });
 
@@ -65,8 +69,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
     };
 
+    const updateUser = (updatedUser: User) => {
+        setUser(updatedUser);
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, token, login, logout, updateUser, loading }}>
             {children}
         </AuthContext.Provider>
     );

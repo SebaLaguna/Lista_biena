@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
-import { ShieldAlert, CheckCircle, User, Mail, Phone, Lock, Hash, MapPin } from 'lucide-react';
+import { ShieldAlert, CheckCircle, User, Mail, Phone, Lock, Hash } from 'lucide-react';
 import CompassLogo from '../components/CompassLogo';
 
 export default function Register() {
@@ -11,6 +11,7 @@ export default function Register() {
         cedula: '',
         legajo: '',
         jerarquia: '',
+        cuerpo: '',
         correo: '',
         telefono: '',
         password: ''
@@ -20,7 +21,7 @@ export default function Register() {
     const [loading, setLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value
@@ -141,6 +142,16 @@ export default function Register() {
                             </div>
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-[10px] font-black text-armada-navy uppercase tracking-widest italic ml-1">
+                                    <Hash size={12} className="text-armada-gold" />
+                                    Nro. de Legajo / Matrícula
+                                </label>
+                                <input required type="text" name="legajo" value={formData.legajo} onChange={handleChange} onKeyDown={handleNumericKeyDown} className="w-full px-4 py-3 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-sm bg-slate-50/50" placeholder="Ej: 987654" />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-[10px] font-black text-armada-navy uppercase tracking-widest italic ml-1">
                                     <ShieldAlert size={12} className="text-armada-gold" />
                                     Jerarquía / Grado
                                 </label>
@@ -148,7 +159,7 @@ export default function Register() {
                                     required
                                     name="jerarquia"
                                     value={formData.jerarquia}
-                                    onChange={handleChange as any}
+                                    onChange={handleChange}
                                     className="w-full px-4 py-3 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-sm bg-slate-50/50"
                                 >
                                     <option value="">Seleccione jerarquía...</option>
@@ -170,16 +181,32 @@ export default function Register() {
                                     <option value="RET">Retirado (RET)</option>
                                 </select>
                             </div>
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-[10px] font-black text-armada-navy uppercase tracking-widest italic ml-1">
+                                    <ShieldAlert size={12} className="text-armada-gold" />
+                                    Cuerpo
+                                </label>
+                                <select
+                                    required
+                                    name="cuerpo"
+                                    value={formData.cuerpo}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-sm bg-slate-50/50"
+                                >
+                                    <option value="">Seleccione cuerpo...</option>
+                                    <option value="CG">Cuerpo General (CG)</option>
+                                    <option value="CIME">Ingeniería de Máquinas y Electricidad (CIME)</option>
+                                    <option value="CP">Cuerpo de Prefectura (CP)</option>
+                                    <option value="CAA">Administración y Abastecimiento (CAA)</option>
+                                    <option value="RN">Reserva Naval (RN)</option>
+                                    <option value="MED">Servicio de Sanidad (MED)</option>
+                                    <option value="CC">Cuerpo Complementario (CC)</option>
+                                    <option value="S/C">Sin Cuerpo / Otro (S/C)</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-[10px] font-black text-armada-navy uppercase tracking-widest italic ml-1">
-                                    <Hash size={12} className="text-armada-gold" />
-                                    Nro. de Legajo / Matrícula
-                                </label>
-                                <input required type="text" name="legajo" value={formData.legajo} onChange={handleChange} onKeyDown={handleNumericKeyDown} className="w-full px-4 py-3 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-sm bg-slate-50/50" placeholder="Ej: 987654" />
-                            </div>
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-[10px] font-black text-armada-navy uppercase tracking-widest italic ml-1">
                                     <Mail size={12} className="text-armada-gold" />
@@ -187,9 +214,6 @@ export default function Register() {
                                 </label>
                                 <input required type="email" name="correo" value={formData.correo} onChange={handleChange} className="w-full px-4 py-3 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-sm bg-slate-50/50" placeholder="usuario@armada.mil.uy" />
                             </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-[10px] font-black text-armada-navy uppercase tracking-widest italic ml-1">
                                     <Phone size={12} className="text-armada-gold" />
@@ -197,6 +221,9 @@ export default function Register() {
                                 </label>
                                 <input required type="text" name="telefono" value={formData.telefono} onChange={handleChange} onKeyDown={handleNumericKeyDown} className="w-full px-4 py-3 border-2 border-slate-100 rounded focus:border-armada-navy outline-none transition-all font-bold text-sm bg-slate-50/50" placeholder="Ej: 099123456" />
                             </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-[10px] font-black text-armada-navy uppercase tracking-widest italic ml-1">
                                     <Lock size={12} className="text-armada-gold" />

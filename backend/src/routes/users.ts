@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { getProfile, getUsers, updateUserStatus, updateUserRole, deleteUser, resetUserPassword } from '../controllers/userController';
+import { getProfile, updateProfile, getUsers, updateUserStatus, updateUserRole, deleteUser, resetUserPassword } from '../controllers/userController';
 import { authenticate, requireAdmin, requireSuperAdmin } from '../middlewares/authMiddleware';
 
 const router = Router();
 
 // Rutas de perfil personal
 router.get('/profile', authenticate, getProfile);
+router.patch('/profile', authenticate, updateProfile);
 
 // Rutas administrativas (BIENA y SuperAdmin)
 router.get('/', authenticate, requireAdmin, getUsers);

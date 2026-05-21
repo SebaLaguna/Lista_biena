@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecreto_armada_2026';
 
 export const register = async (req: Request, res: Response) => {
     try {
-        const { nombre, apellido, cedula, legajo, jerarquia, correo: rawCorreo, telefono, password } = req.body;
+        const { nombre, apellido, cedula, legajo, jerarquia, correo: rawCorreo, telefono, password, cuerpo } = req.body;
         const correo = rawCorreo.toLowerCase();
 
         // Check if user exists
@@ -32,9 +32,10 @@ export const register = async (req: Request, res: Response) => {
                 cedula,
                 legajo,
                 jerarquia: jerarquia as any,
+                cuerpo: cuerpo || null,
                 correo,
                 telefono,
-                password_hash: await bcrypt.hash(password, 10),
+                password_hash,
                 status: 'pendiente' // Asegurar estado pendiente
             }
         });
