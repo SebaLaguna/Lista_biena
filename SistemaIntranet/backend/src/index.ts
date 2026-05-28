@@ -1,0 +1,38 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { PrismaClient } from '@prisma/client';
+import path from 'path';
+
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+console.log('DATABASE_URL loaded:', process.env.DATABASE_URL ? 'Yes (masked)' : 'No');
+
+const app = express();
+const prisma = new PrismaClient();
+const PORT = process.env.PORT || 5000;
+
+import authRoutes from './routes/auth';
+import userRoutes from './routes/users';
+import cabinRoutes from './routes/cabins';
+import reservationRoutes from './routes/reservations';
+import adminRoutes from './routes/admin';
+import logRoutes from './routes/logs';
+
+app.use(cors());
+app.use(express.json());
+
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/cabins', cabinRoutes);
+app.use('/api/reservations', reservationRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/logs', logRoutes);
+
+// Routes will be mounted here
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'API is running' });
+});
+
+app.listen(Number(PORT), '0.0.0.0', () => {
+    console.log(`Server is running on port ${PORT}`);
+});

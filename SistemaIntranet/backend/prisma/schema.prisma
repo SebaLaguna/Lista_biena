@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String               @id @default(uuid())
+  nombre         String
+  apellido       String
+  cedula         String               @unique
+  legajo         String               @unique
+  jerarquia      Hierarchy
+  cuerpo         String?
+  correo         String               @unique
+  telefono       String?
+  password_hash  String
+  role           Role                 @default(common_user)
+  status         String               @default("pendiente")
+  created_at     DateTime             @default(now())
+  reservations   Reservation[]
+  historyChanges ReservationHistory[] @relation("ChangedBy")
+  logs           SystemLog[]
+}
+
+model Location {
+  id          String        @id @default(uuid())
+  name        String        @unique
+  description String?
+  mando       Mando?
+  cabins      Cabin[]
+  reservations Reservation[]
+}
+
+model Cabin {
+  id                  String        @id @default(uuid())
+  location_id         String
+  identifier          String        @unique
+  capacity            Int?
+  status              String        @default("disponible")
+  allowed_hierarchies Json?
+  blocked_dates       BlockedDate[]
+  location            Location      @relation(fields: [location_id], references: [id])
+  reservations        Reservation[]
+}
+
+model Reservation {
+  id                String               @id @default(uuid())
+  user_id           String
+  cabin_id          String?              // Opcional para postulaciones estivales
+  location_id       String?              // Sede solicitada
+  start_date        DateTime             @db.Date
+  end_date          DateTime             @db.Date
+  occupants         Int                  @default(1)
+  status            Status               @default(pendiente)
+  created_at        DateTime             @default(now())
+  priority          Int?                 // Prioridad 1 o 2
+  application_group String?              // Para agrupar opciones estivales
+  cabin             Cabin?               @relation(fields: [cabin_id], references: [id])
+  location          Location?            @relation(fields: [location_id], references: [id])
+  user              User                 @relation(fields: [user_id], references: [id])
+  comments          String?
+  history           ReservationHistory[]
+}
+
+model ReservationHistory {
+  id             String      @id @default(uuid())
+  reservation_id String
+  changed_by     String
+  old_status     String?
+  new_status     String
+  change_date    DateTime    @default(now())
+  comments       String?
+  changer        User        @relation("ChangedBy", fields: [changed_by], references: [id])
+  reservation    Reservation @relation(fields: [reservation_id], references: [id])
+}
+
+model SystemLog {
+  id          String   @id @default(uuid())
+  user_id     String?
+  action      String
+  entity_type String
+  entity_id   String?
+  details     String?
+  created_at  DateTime @default(now())
+  user        User?    @relation(fields: [user_id], references: [id])
+}
+
+model BlockedDate {
+  id         String   @id @default(uuid())
+  cabin_id   String?
+  start_date DateTime @db.Date
+  end_date   DateTime @db.Date
+  reason     String?
+  created_at DateTime @default(now())
+  cabin      Cabin?   @relation(fields: [cabin_id], references: [id])
+}
+
+model EstivalPeriod {
+  id          String   @id @default(uuid())
+  start_date  DateTime @db.Date
+  end_date    DateTime @db.Date
+  description String?
+  created_at  DateTime @default(now())
+}
+
+enum Role {
+  common_user
+  admin_biena
+  super_admin
+}
+
+enum Status {
+  pendiente
+  aprobada
+  rechazada
+  cancelada
+}
+
+enum Hierarchy {
+  ALM
+  CA
+  CN
+  CF
+  CC
+  TN
+  AN
+  AF
+  GM
+  SOC
+  SOP
+  SOS
+  CP
+  CS
+  MP
+  RET
+}
+
+enum Mando {
+  COMFLO
+  DIMAT
+  PRENA
+}
