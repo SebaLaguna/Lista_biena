@@ -98,7 +98,11 @@ export const login = async (req: Request, res: Response) => {
                 correo: user.correo,
                 role: user.role,
                 jerarquia: user.jerarquia,
-                status: user.status
+                status: user.status,
+                cedula: user.cedula,
+                legajo: user.legajo,
+                cuerpo: user.cuerpo,
+                telefono: user.telefono
             }
         });
     } catch (error) {

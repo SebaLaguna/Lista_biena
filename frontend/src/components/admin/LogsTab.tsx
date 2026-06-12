@@ -37,9 +37,9 @@ export default function LogsTab() {
         const rows = filteredLogs.map(log => [
             format(new Date(log.created_at), "dd/MM/yyyy"),
             format(new Date(log.created_at), "HH:mm:ss"),
-            `"${log.user.nombre} ${log.user.apellido}"`,
-            log.user.legajo,
-            log.user.role,
+            log.user ? `"${log.user.nombre} ${log.user.apellido}"` : `"SISTEMA"`,
+            log.user ? log.user.legajo : "N/A",
+            log.user ? log.user.role : "SISTEMA",
             log.action,
             log.entity_type,
             log.entity_id,
@@ -85,7 +85,9 @@ export default function LogsTab() {
         // Filtro por tipo de buscador principal
         if (searchType === 'todos' || searchType === 'operador') {
             if (term) {
-                const operatorStr = `${log.user.nombre} ${log.user.apellido} ${log.user.legajo}`.toLowerCase();
+                const operatorStr = log.user
+                    ? `${log.user.nombre} ${log.user.apellido} ${log.user.legajo}`.toLowerCase()
+                    : "sistema";
                 if (!operatorStr.includes(term)) return false;
             }
         }
@@ -270,8 +272,8 @@ export default function LogsTab() {
                                         {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", { locale: es })}
                                     </td>
                                     <td className="px-5 py-4 whitespace-nowrap">
-                                        <div className="text-xs font-black text-armada-navy uppercase">{log.user.nombre} {log.user.apellido}</div>
-                                        <div className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">L: {log.user.legajo} | Rol: {log.user.role}</div>
+                                        <div className="text-xs font-black text-armada-navy uppercase">{log.user ? `${log.user.nombre} ${log.user.apellido}` : 'SISTEMA'}</div>
+                                        <div className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">L: {log.user ? log.user.legajo : 'N/A'} | Rol: {log.user ? log.user.role : 'SISTEMA'}</div>
                                     </td>
                                     <td className="px-5 py-4 text-xs font-bold text-slate-700 uppercase">
                                         {log.action}

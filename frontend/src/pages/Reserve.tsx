@@ -55,7 +55,7 @@ const CUERPO_OPTIONS = [
 ];
 
 export default function Reserve() {
-    const { user, updateUser } = useAuth();
+    const { user, updateUser, loading: authLoading } = useAuth();
     const [locations, setLocations] = useState<Location[]>([]);
     
     // Reglas de anticipación por jerarquía
@@ -89,7 +89,7 @@ export default function Reserve() {
     const navigate = useNavigate();
 
     // Estados para el Modal Obligatorio de Perfil
-    const [showProfileModal, setShowProfileModal] = useState(true);
+    const [showProfileModal, setShowProfileModal] = useState(false);
     const [profileForm, setProfileForm] = useState({
         nombre: '',
         apellido: '',
@@ -104,7 +104,7 @@ export default function Reserve() {
     const [profileError, setProfileError] = useState('');
 
     useEffect(() => {
-        if (user) {
+        if (!authLoading && user) {
             setProfileForm({
                 nombre: user.nombre || '',
                 apellido: user.apellido || '',
@@ -116,7 +116,7 @@ export default function Reserve() {
                 telefono: user.telefono || ''
             });
         }
-    }, [user]);
+    }, [user, authLoading]);
 
     const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -164,6 +164,9 @@ export default function Reserve() {
             const response = await api.patch('/users/profile', profileForm);
             updateUser(response.data);
             setShowProfileModal(false);
+            
+            // Si el perfil se actualizó correctamente, procedemos con la reserva
+            await executeBookingCreation();
         } catch (err: any) {
             console.error(err);
             setProfileError(err.response?.data?.error || 'Error al actualizar el perfil.');
@@ -383,14 +386,26 @@ export default function Reserve() {
 
     const canSubmit = isEstival ? canSubmitEstival : canSubmitNormal;
 
-    const handleBooking = async () => {
+    const handleConfirmClick = () => {
         if (!canSubmit) return;
         
-        if (!isEstival && selectedCabinData && occupants > selectedCabinData.capacity) {
-            setError(`La capacidad máxima de la cabaña es de ${selectedCabinData.capacity} ocupantes.`);
+        const maxCapacity = selectedCabinData ? Math.min(6, selectedCabinData.capacity || 6) : 6;
+        if (!isEstival && selectedCabinData && occupants > maxCapacity) {
+            setError(`La capacidad máxima de la cabaña es de ${maxCapacity} ocupantes.`);
             return;
         }
 
+        if (isEstival && occupants > 6) {
+            setError('La cantidad máxima de ocupantes permitida es 6, incluyendo al solicitante.');
+            return;
+        }
+
+        // Mostrar el modal de confirmación y revisión de perfil antes de procesar la reserva
+        setProfileError('');
+        setShowProfileModal(true);
+    };
+
+    const executeBookingCreation = async () => {
         setLoading(true);
         setError('');
 
@@ -997,7 +1012,7 @@ export default function Reserve() {
 
                         <button
                             type="button"
-                            onClick={handleBooking}
+                            onClick={handleConfirmClick}
                             disabled={!canSubmit}
                             className={`w-full py-4 rounded-lg flex items-center justify-center gap-3 transition-all group ${canSubmit 
                                 ? 'bg-armada-navy text-white hover:bg-armada-black shadow-xl scale-100 hover:scale-[1.02]' 
@@ -1023,10 +1038,10 @@ export default function Reserve() {
                         <div className="p-6 border-b-2 border-armada-gold bg-armada-navy text-white rounded-t-lg">
                             <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
                                 <ShieldAlert className="text-armada-gold" size={24} />
-                                Actualización de Perfil Requerida
+                                Verificación de Datos del Solicitante
                             </h3>
                             <p className="text-[10px] text-slate-300 font-bold uppercase tracking-wider mt-1">
-                                Debe verificar y completar sus datos para continuar con el trámite de reserva.
+                                Por favor verifique que sus datos estén correctos antes de confirmar el trámite de reserva.
                             </p>
                         </div>
                         
@@ -1035,10 +1050,10 @@ export default function Reserve() {
                             <div className="bg-amber-50 border-r-4 border-amber-500 p-4 rounded text-amber-800 space-y-1">
                                 <h4 className="text-xs font-black uppercase tracking-wider flex items-center gap-1.5">
                                     <Info size={16} className="text-amber-600" />
-                                    Importante: Prioridad y Asignación
+                                    Importante: Criterios de Asignación
                                 </h4>
                                 <p className="text-[10px] font-bold leading-relaxed">
-                                    Los datos de jerarquía, cuerpo, cédula y legajo son indispensables para calcular automáticamente la prioridad y viabilidad de las solicitudes de alojamiento. Asegúrese de que toda la información sea exacta y esté completa.
+                                    La asignación de viviendas vacacionales (especialmente en temporada estival) está sujeta al grado (Jerarquía) y número de legajo del funcionario. Es de suma importancia que la información sea exacta y coincida con el escalafón oficial.
                                 </p>
                             </div>
 
@@ -1153,7 +1168,7 @@ export default function Reserve() {
                             <div className="flex gap-4 pt-4 border-t border-slate-100 justify-end">
                                 <button
                                     type="button"
-                                    onClick={() => navigate('/my-reservations')}
+                                    onClick={() => setShowProfileModal(false)}
                                     className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-xs font-black uppercase tracking-wider transition-colors"
                                 >
                                     Volver

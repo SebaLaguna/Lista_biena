@@ -105,6 +105,62 @@ export default function MyReservations() {
         return matchesText && matchesDate;
     });
 
+    const groupedReservations = (() => {
+        const groups: { [key: string]: any } = {};
+        const result: any[] = [];
+
+        filteredReservations.forEach(res => {
+            if (res.application_group) {
+                if (!groups[res.application_group]) {
+                    groups[res.application_group] = {
+                        id: res.id,
+                        application_group: res.application_group,
+                        is_grouped: true,
+                        created_at: res.created_at,
+                        user: res.user,
+                        occupants: res.occupants,
+                        options: [],
+                        status: 'pendiente'
+                    };
+                    result.push(groups[res.application_group]);
+                }
+                groups[res.application_group].options.push(res);
+            } else {
+                result.push({
+                    ...res,
+                    is_grouped: false
+                });
+            }
+        });
+
+        result.forEach(item => {
+            if (item.is_grouped) {
+                item.options.sort((a: any, b: any) => (a.priority || 0) - (b.priority || 0));
+                
+                const statuses = item.options.map((o: any) => o.status);
+                if (statuses.includes('aprobada')) {
+                    item.status = 'aprobada';
+                } else if (statuses.every((s: string) => s === 'cancelada')) {
+                    item.status = 'cancelada';
+                } else if (statuses.every((s: string) => s === 'rechazada' || s === 'cancelada')) {
+                    item.status = 'rechazada';
+                } else if (statuses.includes('pendiente')) {
+                    item.status = 'pendiente';
+                } else {
+                    item.status = statuses[0];
+                }
+
+                if (item.options.length > 0) {
+                    item.start_date = item.options[0].start_date;
+                    item.end_date = item.options[0].end_date;
+                    item.comments = item.options.map((o: any) => o.comments).filter(Boolean).join(' | ');
+                }
+            }
+        });
+
+        return result;
+    })();
+
     return (
         <div className="w-full space-y-8 md:space-y-10 py-4 md:py-8 px-4 sm:px-6 lg:px-10">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b-4 border-armada-gold pb-6 text-center sm:text-left animate-fade-in-up">
@@ -126,6 +182,7 @@ export default function MyReservations() {
                             startDate={filterStart}
                             endDate={filterEnd}
                             onChange={(update: [Date | null, Date | null]) => {
+                                // @ts-ignore
                                 setFilterDateRange(update);
                             }}
                             isClearable={true}
@@ -148,7 +205,7 @@ export default function MyReservations() {
                 </div>
             </div>
 
-            {filteredReservations.length === 0 ? (
+            {groupedReservations.length === 0 ? (
                 <div className="institutional-card p-12 md:p-16 text-center bg-slate-50/50 border-dashed border-2 border-slate-200 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
                     <CompassLogo className="mx-auto text-slate-300 mb-4" size={64} bgColor="transparent" />
                     <h3 className="text-lg md:text-xl font-bold text-slate-400 uppercase tracking-widest">
@@ -162,7 +219,107 @@ export default function MyReservations() {
                 </div>
             ) : (
                 <div className="grid gap-6 md:gap-8 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-                    {filteredReservations.map((reservation, idx) => (
+                    {groupedReservations.map((reservation, idx) => {
+                        if (reservation.is_grouped) {
+                            return (
+                                <div key={reservation.id} className="institutional-card group hover:border-armada-gold transition-all overflow-hidden" style={{ animationDelay: `${idx * 50}ms` }}>
+                                    <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                                        <div className="p-5 md:p-8 md:w-2/3 space-y-6">
+                                            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-armada-gold mb-1">
+                                                        <Anchor size={12} />
+                                                        <span>Postulación Estival</span>
+                                                    </div>
+                                                    <h3 className="text-lg md:text-xl font-black text-armada-navy uppercase tracking-tight">
+                                                        POSTULACIÓN ESTIVAL — {reservation.occupants} OCUPANTES
+                                                    </h3>
+                                                </div>
+                                                <span className={`px-4 py-1.5 rounded text-[9px] md:text-[10px] font-black uppercase tracking-widest border shadow-sm w-full sm:w-auto text-center ${getStatusStyles(reservation.status)}`}>
+                                                    {reservation.status}
+                                                </span>
+                                            </div>
+
+                                            {/* List of options */}
+                                            <div className="space-y-4 pt-2">
+                                                {reservation.options.map((opt: any) => (
+                                                    <div key={opt.id} className="p-4 bg-slate-50/80 rounded border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="bg-armada-gold text-armada-navy px-1.5 py-0.5 rounded text-[8px] font-black uppercase border border-armada-navy/15 shadow-sm whitespace-nowrap inline-block">
+                                                                    OPCIÓN {opt.priority}
+                                                                </span>
+                                                                <span className="font-black text-armada-navy uppercase text-sm">
+                                                                    {opt.cabin?.location?.name || opt.location?.name || 'Sede'} {opt.cabin?.identifier ? `— ${opt.cabin.identifier}` : ''}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 text-slate-500 text-xs font-bold uppercase mt-1">
+                                                                <Calendar size={12} className="text-slate-400" />
+                                                                <span>
+                                                                    {format(new Date(opt.start_date), "dd MMMM", { locale: es })} — {format(new Date(opt.end_date), "dd MMMM, yyyy", { locale: es })}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex flex-col sm:items-end gap-1.5 shrink-0">
+                                                            <span className={`px-3 py-1 rounded text-[8px] md:text-[9px] font-black uppercase tracking-widest border shadow-sm ${getStatusStyles(opt.status)}`}>
+                                                                {opt.status}
+                                                            </span>
+                                                            {opt.comments && (
+                                                                <p className="text-[10px] text-slate-500 font-bold italic max-w-xs text-right">{opt.comments}</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="p-5 md:p-8 md:w-1/3 bg-slate-50/50 flex flex-col justify-between border-t md:border-t-0">
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-2 text-slate-400">
+                                                    <Clock size={14} />
+                                                    <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">Fecha de Solicitud</span>
+                                                </div>
+                                                <p className="text-xs md:text-sm font-bold text-slate-600">{format(new Date(reservation.created_at), "PPP", { locale: es })}</p>
+                                            </div>
+
+                                            {reservation.status === 'pendiente' && (
+                                                <div className="mt-6 space-y-3">
+                                                    <div className="flex items-center gap-3 bg-white p-3 rounded border border-armada-gold/20 shadow-sm">
+                                                        <ShieldCheck size={16} className="text-armada-gold shrink-0" />
+                                                        <p className="text-[8px] md:text-[9px] font-bold text-armada-navy uppercase leading-tight italic">
+                                                            Esta solicitud se encuentra bajo revisión de BIENA.
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleCancelClick(reservation.options.find((o: any) => o.status === 'pendiente')?.id || reservation.id)}
+                                                        disabled={actionLoading !== null}
+                                                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded border-2 border-slate-200 text-slate-500 hover:border-red-500 hover:text-red-500 hover:bg-red-50 transition-all font-black text-[10px] uppercase tracking-widest disabled:opacity-50"
+                                                    >
+                                                        {actionLoading ? <RefreshCw size={14} className="animate-spin" /> : <X size={14} strokeWidth={3} />}
+                                                        Cancelar Solicitud
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {reservation.status === 'aprobada' && reservation.options.some((o: any) => o.status === 'aprobada' && new Date(o.start_date) > new Date()) && (
+                                                <div className="mt-6 space-y-3">
+                                                    <button
+                                                        onClick={() => handleCancelClick(reservation.options.find((o: any) => o.status === 'aprobada')?.id || reservation.id)}
+                                                        disabled={actionLoading !== null}
+                                                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded border-2 border-slate-200 text-slate-500 hover:border-red-500 hover:text-red-500 hover:bg-red-50 transition-all font-black text-[10px] uppercase tracking-widest disabled:opacity-50"
+                                                    >
+                                                        {actionLoading ? <RefreshCw size={14} className="animate-spin" /> : <X size={14} strokeWidth={3} />}
+                                                        Cancelar Reserva Aprobada
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        }
+
+                        return (
                         <div key={reservation.id} className="institutional-card group hover:border-armada-gold transition-all overflow-hidden" style={{ animationDelay: `${idx * 50}ms` }}>
                             <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-slate-100">
                                 <div className="p-5 md:p-8 md:w-2/3 space-y-6">
@@ -248,7 +405,8 @@ export default function MyReservations() {
                                 </div>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 

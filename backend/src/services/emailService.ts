@@ -60,7 +60,7 @@ export const sendEmail = async (to: string, subject: string, html: string) => {
     try {
         const transporter = await createTransporter();
         const info = await transporter.sendMail({
-            from: '"Sistema BIENA - Armada Nacional" <no-reply@armada.mil.uy>',
+            from: `"Sistema BIENA - Armada Nacional" <${process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@armada.mil.uy'}>`,
             to,
             subject,
             html

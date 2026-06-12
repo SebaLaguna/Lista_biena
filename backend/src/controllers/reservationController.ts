@@ -452,6 +452,47 @@ export const cancelMyReservation = async (req: AuthRequest, res: Response): Prom
             }
         });
 
+        // Automatically cancel sibling options if this was a cancelled estival option
+        if (reservation.application_group) {
+            const siblings = await prisma.reservation.findMany({
+                where: {
+                    application_group: reservation.application_group,
+                    id: { not: id },
+                    status: { in: ['pendiente', 'aprobada'] }
+                }
+            });
+
+            for (const sibling of siblings) {
+                await prisma.reservation.update({
+                    where: { id: sibling.id },
+                    data: {
+                        status: 'cancelada',
+                        comments: `Cancelación automática por anulación de postulación estival: ${comments}`
+                    }
+                });
+
+                await prisma.reservationHistory.create({
+                    data: {
+                        reservation_id: sibling.id,
+                        changed_by: userId as string,
+                        old_status: sibling.status,
+                        new_status: 'cancelada',
+                        comments: `Cancelación automática por anulación de postulación estival: ${comments}`
+                    }
+                });
+
+                await prisma.systemLog.create({
+                    data: {
+                        user_id: userId as string,
+                        action: 'cancel_reservation',
+                        entity_type: 'Reservation',
+                        entity_id: sibling.id,
+                        details: `Cancelación automática de opción alternativa (Opción ${sibling.priority}) debido a la cancelación de la solicitud principal por el usuario.`
+                    }
+                });
+            }
+        }
+
         // Notify Admins
         const admins = await prisma.user.findMany({ where: { role: 'admin_biena', status: 'aprobado' } });
         const adminEmails = admins.map(a => a.correo);
@@ -809,18 +850,42 @@ export const deleteReservation = async (req: AuthRequest, res: Response) => {
         }
 
         // Delete related history first
-        await prisma.reservationHistory.deleteMany({ where: { reservation_id: id } });
-        await prisma.reservation.delete({ where: { id } });
+        if (reservation.application_group) {
+            const siblings = await prisma.reservation.findMany({
+                where: { application_group: reservation.application_group }
+            });
+            const siblingIds = siblings.map(s => s.id);
 
-        await prisma.systemLog.create({
-            data: {
-                user_id: adminId,
-                action: 'delete_reservation',
-                entity_type: 'Reservation',
-                entity_id: id,
-                details: `Reserva eliminada por SuperAdmin (ID: ${id})`
-            }
-        });
+            await prisma.reservationHistory.deleteMany({
+                where: { reservation_id: { in: siblingIds } }
+            });
+            await prisma.reservation.deleteMany({
+                where: { application_group: reservation.application_group }
+            });
+
+            await prisma.systemLog.create({
+                data: {
+                    user_id: adminId,
+                    action: 'delete_reservation_group',
+                    entity_type: 'Reservation',
+                    entity_id: reservation.application_group,
+                    details: `Grupo de postulación estival eliminado por SuperAdmin (Grupo: ${reservation.application_group}, IDs: ${siblingIds.join(', ')})`
+                }
+            });
+        } else {
+            await prisma.reservationHistory.deleteMany({ where: { reservation_id: id } });
+            await prisma.reservation.delete({ where: { id } });
+
+            await prisma.systemLog.create({
+                data: {
+                    user_id: adminId,
+                    action: 'delete_reservation',
+                    entity_type: 'Reservation',
+                    entity_id: id,
+                    details: `Reserva eliminada por SuperAdmin (ID: ${id})`
+                }
+            });
+        }
 
         res.json({ message: 'Reserva eliminada correctamente' });
     } catch (error) {
